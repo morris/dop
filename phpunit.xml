@@ -1,0 +1,12 @@
+<phpunit bootstrap="tests/sqlite.php">
+  <testsuites>
+    <testsuite name="tests">
+      <directory>tests</directory>
+    </testsuite>
+   </testsuites>
+   <filter>
+    <whitelist processUncoveredFilesFromWhitelist="true">
+      <directory suffix=".php">src/Dop</directory>
+    </whitelist>
+  </filter>
+</phpunit>

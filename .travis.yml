@@ -1,0 +1,31 @@
+language: php
+php:
+  - "5.6"
+  - "5.5"
+  - "5.4"
+  - "5.3.0"
+
+services:
+  - mysql
+  - postgresql
+
+env:
+  - BOOTSTRAP=sqlite
+  - BOOTSTRAP=mysql
+  - BOOTSTRAP=postgresql
+
+before_script:
+  - composer self-update
+  - composer install --prefer-dist
+  - mysql -e 'create database test;'
+  - psql -c 'create database test;' -U postgres
+
+script:
+  - vendor/bin/phpunit --bootstrap=tests/$BOOTSTRAP.php --coverage-clover=build/logs/clover.xml tests
+
+after_script:
+  - vendor/bin/test-reporter
+
+addons:
+  code_climate:
+    repo_token: 670d2b952203f7af4996bf105b0d5efd1d1a78ca5ddbc3977ee9bca66aac4687

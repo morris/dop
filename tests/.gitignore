@@ -1,0 +1,4 @@
+*.local.php
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
