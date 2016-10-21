@@ -350,6 +350,18 @@ class ConnectionTest extends BaseTest {
 
   }
 
+  function testRaw() {
+
+    $conn = $this->conn;
+
+    $raw = "SELET * FROM dummy WHERE test='::test' AND foo=::test and ?? = 1";
+    $frag = $conn->raw( $raw );
+
+    $this->assertEquals( $raw, (string) $frag );
+    $this->assertEquals( $raw, (string) $frag->resolve() );
+
+  }
+
   function testReadme() {
 
     $dop = $this->conn;

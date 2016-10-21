@@ -207,6 +207,16 @@ class Connection {
    */
   function fragment( $sql = '', $params = array() );
 
+  /**
+   * Create a raw SQL fragment, optionally with bound params.
+   * The fragment will not be resolved, i.e. ?? and :: params ignored.
+   *
+   * @param string|Fragment $sql
+   * @param array $params
+   * @return Fragment
+   */
+  function raw( $sql = '', $params = array() );
+
   //
 
   /**
@@ -295,6 +305,8 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * Constructor
    *
    * @param Connection $conn
+   * @param string $sql
+   * @param array $params
    */
   function __construct( $conn, $sql = '', array $params = array() );
 
@@ -493,7 +505,15 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   function resolve();
 
   /**
+   * Create a raw SQL fragment copy of this fragment.
+   * The new fragment will not be resolved, i.e. ?? and :: params ignored.
    *
+   * @return Fragment
+   */
+  function raw();
+
+  /**
+   * @ignore
    */
   function __clone();
 

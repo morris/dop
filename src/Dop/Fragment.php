@@ -14,6 +14,8 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * Constructor
    *
    * @param Connection $conn
+   * @param string $sql
+   * @param array $params
    */
   function __construct( $conn, $sql = '', array $params = array() ) {
     $this->conn = $conn;
@@ -395,7 +397,19 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   }
 
   /**
+   * Create a raw SQL fragment copy of this fragment.
+   * The new fragment will not be resolved, i.e. ?? and :: params ignored.
    *
+   * @return Fragment
+   */
+  function raw() {
+    $clone = clone $this;
+    $clone->resolved = $clone;
+    return $clone;
+  }
+
+  /**
+   * @ignore
    */
   function __clone() {
     if ( $this->resolved !== $this ) $this->resolved = null;

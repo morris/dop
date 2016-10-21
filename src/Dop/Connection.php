@@ -514,6 +514,18 @@ class Connection {
     return new Fragment( $this, $sql, $params );
   }
 
+  /**
+   * Create a raw SQL fragment, optionally with bound params.
+   * The fragment will not be resolved, i.e. ?? and :: params ignored.
+   *
+   * @param string|Fragment $sql
+   * @param array $params
+   * @return Fragment
+   */
+  function raw( $sql = '', $params = array() ) {
+    return $this( $sql, $params )->raw();
+  }
+
   //
 
   /**
