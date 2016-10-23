@@ -203,7 +203,8 @@ class SQLTest extends BaseTest {
 
   function testFirst() {
     $conn = $this->conn;
-    $this->assertEquals( 'Championship won', $conn->query( 'post' )->first()[ 'title' ] );
+    $first = $conn->query( 'post' )->first();
+    $this->assertEquals( 'Championship won', $first[ 'title' ] );
   }
 
   function testAll() {
