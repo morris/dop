@@ -372,20 +372,20 @@ class ConnectionTest extends BaseTest {
     // Get categorizations
     $categorizations = $dop(
       'select * from categorization where post_id in ( ?? )',
-      [ $posts->map( 'id' ) ]
+      array( $posts->map( 'id' ) )
     )->exec();
 
     // Find posts with more than 3 categorizations
-    $catCount = $dop( 'select count(*) from categorization where post_id = post.id' );
-    $posts = $dop( 'select * from post where (::catCount) >= 3',
-      [ 'catCount' => $catCount ] )->exec();
+    $catCount = $dop( 'select count( * ) from categorization where post_id = post.id' );
+    $posts = $dop( 'select * from post where ( ::catCount ) >= 3',
+      array( 'catCount' => $catCount ) )->exec();
 
     //
 
     $authorIds = array( 1, 2, 3 );
     $orderByTitle = $dop( 'order by title asc' );
-    $posts = $dop( 'select id from post where author_id in ( ?? ) ?? limit ??',
-      array( $authorIds, $orderByTitle, 5 ) );
+    $posts = $dop( 'select id from post where author_id in ( ?? ) ??',
+      array( $authorIds, $orderByTitle ) );
 
     // use $posts as sub query
     $cats = $dop( 'select * from categorization where post_id in ( ::posts )',

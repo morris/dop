@@ -431,7 +431,6 @@ class Connection {
 
     $value = $this->format( $value );
 
-    if ( is_int( $value ) ) $value = (string) $value;
     if ( is_float( $value ) ) $value = sprintf( '%F', $value );
     if ( $value === false ) $value = '0';
     if ( $value === true ) $value = '1';

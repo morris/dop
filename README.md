@@ -40,10 +40,10 @@ They allow arbitrary values like arrays, `null`, and other SQL fragments,
 and enable powerful composition:
 
 ```php
-$authorIds = array( 1, 2, 3 );
+$authorIds = [ 1, 2, 3 ];
 $orderByTitle = $dop( 'order by title asc' );
-$posts = $dop( 'select id from post where author_id in ( ?? ) ?? limit ??',
-  array( $authorIds, $orderByTitle, 5 ) );
+$posts = $dop( 'select id from post where author_id in ( ?? ) ??',
+  array( $authorIds, $orderByTitle ) );
 
 // use $posts as sub query
 $cats = $dop( 'select * from categorization where post_id in ( ::posts )',
