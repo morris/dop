@@ -367,7 +367,7 @@ class ConnectionTest extends BaseTest {
     $dop = $this->conn;
 
     // Get some posts
-    $posts = $dop->query( 'post' )->where( 'is_published = ?', [ 1 ] )->exec();
+    $posts = $dop->query( 'post' )->where( 'is_published = ?', array( 1 ) )->exec();
 
     // Get categorizations
     $categorizations = $dop(
