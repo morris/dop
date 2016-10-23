@@ -1,13 +1,13 @@
 {
   "name": "morris/dop",
-  "description": "Simplifies writing and executing complex SQL statements using PDO",
+  "description": "An immutable API on top of PDO to compose and execute SQL statements",
   "keywords": [ "sql", "pdo", "database", "dop" ],
   "license": "MIT",
-  "homepage": "http://github.com/morris/dop",
+  "homepage": "https://github.com/morris/dop",
   "authors": [
     {
       "name": "Morris Brodersen",
-      "homepage": "http://morrisbrodersen.de"
+      "homepage": "https://morrisbrodersen.de"
     }
   ],
 

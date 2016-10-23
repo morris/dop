@@ -3,8 +3,9 @@
 [ ![Build Status](https://travis-ci.org/morris/dop.svg?branch=master) ](https://travis-ci.org/morris/dop)
 [ ![Test Coverage](https://codeclimate.com/github/morris/dop/badges/coverage.svg) ](https://codeclimate.com/github/morris/dop/coverage)
 
-Dop simplifies writing and executing complex SQL statements using
-an immutable API on top of [PDO](http://php.net/manual/en/book.pdo.php).
+Dop is an immutable API on top of [PDO](http://php.net/manual/en/book.pdo.php)
+to compose and execute SQL statements.
+Its extended parameters allow arbitrary values like arrays and SQL fragments.
 
 
 ## Usage
@@ -35,7 +36,7 @@ __See [API.md](API.md) for a complete API reference.__
 ## Parameters
 
 Dop introduces additional parameter markers written as `::name` or `??`.
-They resolve to arbitrary values like arrays, `null`, and other SQL fragments,
+They allow arbitrary values like arrays, `null`, and other SQL fragments,
 and enable powerful composition:
 
 ```php
