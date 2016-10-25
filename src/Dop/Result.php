@@ -89,7 +89,7 @@ class Result implements \IteratorAggregate, \Countable, \JsonSerializable {
       };
     }
 
-    return array_filter( $this->rows, $fn );
+    return array_values( array_filter( $this->rows, $fn ) );
 
   }
 

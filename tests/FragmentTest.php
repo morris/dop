@@ -278,8 +278,16 @@ class SQLTest extends BaseTest {
     $this->assertEquals( 3, count( $conn->query( 'post' )->filter( array() ) ) );
 
     $this->assertEquals( 2, count( $conn->query( 'post' )->filter( function ( $row ) {
-      return $row[ 'id' ] < 13;
+      return $row[ 'id' ] > 11;
     } ) ) );
+
+    $notFirst = $conn->query( 'post' )->filter( function ( $row ) {
+      return $row[ 'id' ] > 11;
+    } );
+
+    $this->assertTrue( isset( $notFirst[ 0 ] ) );
+    $this->assertTrue( isset( $notFirst[ 1 ] ) );
+    $this->assertFalse( isset( $notFirst[ 3 ] ) );
 
   }
 
