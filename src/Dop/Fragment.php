@@ -140,7 +140,7 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
     }
 
     return $this->bind( array(
-      'select' => $this->conn->fragment(
+      'select' => $this->conn->raw(
         $before . $this->conn->ident( func_get_args() )
       )
     ) );

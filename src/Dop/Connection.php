@@ -83,7 +83,7 @@ class Connection {
           $values[] = 'DEFAULT';
         }
       }
-      $lists[] = $this( "( " . implode( ", ", $values ) . " )" );
+      $lists[] = $this->raw( "( " . implode( ", ", $values ) . " )" );
     }
 
     return $this( 'INSERT INTO ::table ( ::columns ) VALUES ::values', array(
@@ -223,8 +223,7 @@ class Connection {
     }
 
     if ( $before && (string) $before !== '1=1' ) {
-      return $this( '(' . $before . ') AND ::__condition', $before->resolve()->params() )
-        ->bind( '__condition', $condition );
+      return $this( '(??) AND ??', array( $before, $condition ) );
     }
 
     return $condition;
@@ -254,8 +253,7 @@ class Connection {
     $condition = $this->isNot( $key, $value );
 
     if ( $before && (string) $before !== '1=1' ) {
-      return $this( '(' . $before . ') AND ::__condition', $before->resolve()->params() )
-        ->bind( '__condition', $condition );
+      return $this( '(??) AND ??', array( $before, $condition ) );
     }
 
     return $condition;
@@ -276,7 +274,7 @@ class Connection {
       throw new Exception( 'Invalid ORDER BY direction: ' . $direction );
     }
 
-    return $this(
+    return $this->raw(
       ( $before && (string) $before !== '' ? ( $before . ', ' ) : 'ORDER BY ' ) .
       $this->ident( $column ) . ' ' . $direction
     );
@@ -301,10 +299,10 @@ class Connection {
         $offset = intval( $offset );
         if ( $offset < 0 ) throw new Exception( 'Invalid LIMIT offset: ' + $offset );
 
-        return $this( 'LIMIT ' . $count . ' OFFSET ' . $offset );
+        return $this->raw( 'LIMIT ' . $count . ' OFFSET ' . $offset );
       }
 
-      return $this( 'LIMIT ' . $count );
+      return $this->raw( 'LIMIT ' . $count );
     }
 
     return $this();
@@ -343,9 +341,9 @@ class Connection {
       $value = $value[ 0 ];
 
       if ( $value === null ) {
-        return $this( $column . ' IS' . $not . ' NULL' );
+        return $this->raw( $column . ' IS' . $not . ' NULL' );
       } else {
-        return $this( $column . ' ' . $bang . '= ' . $this->value( $value ) );
+        return $this->raw( $column . ' ' . $bang . '= ' . $this->value( $value ) );
       }
 
     } else if ( count( $value ) > 1 ) {
@@ -375,11 +373,11 @@ class Connection {
         $clauses[] = $column . ' IS' . $not . ' NULL';
       }
 
-      return $this( implode( $or, $clauses ) );
+      return $this->raw( implode( $or, $clauses ) );
 
     }
 
-    return $this( $novalue );
+    return $this->raw( $novalue );
 
   }
 
@@ -410,7 +408,7 @@ class Connection {
       $assign[] = $this->ident( $column ) . ' = ' . $this->value( $value );
     }
 
-    return $this( implode( ', ', $assign ) );
+    return $this->raw( implode( ', ', $assign ) );
 
   }
 
@@ -423,7 +421,7 @@ class Connection {
   function value( $value ) {
 
     if ( is_array( $value ) ) {
-      return $this( implode( ', ', array_map( array( $this, 'value' ), $value ) ) );
+      return $this->raw( implode( ', ', array_map( array( $this, 'value' ), $value ) ) );
     }
 
     if ( $value instanceof Fragment ) return $value;
@@ -435,7 +433,7 @@ class Connection {
     if ( $value === false ) $value = '0';
     if ( $value === true ) $value = '1';
 
-    return $this( $this->pdo()->quote( $value ) );
+    return $this->raw( $this->pdo()->quote( $value ) );
 
   }
 
@@ -479,7 +477,7 @@ class Connection {
   function ident( $ident ) {
 
     if ( is_array( $ident ) ) {
-      return $this( implode( ', ', array_map( array( $this, 'ident' ), $ident ) ) );
+      return $this->raw( implode( ', ', array_map( array( $this, 'ident' ), $ident ) ) );
     }
 
     if ( $ident instanceof Fragment ) return $ident;
@@ -490,7 +488,7 @@ class Connection {
 
     $d = $this->identDelimiter;
 
-    return $this( $d . str_replace( $d, $d . $d, $ident ) . $d );
+    return $this->raw( $d . str_replace( $d, $d . $d, $ident ) . $d );
 
   }
 

@@ -393,4 +393,29 @@ class ConnectionTest extends BaseTest {
 
   }
 
+  function testInjection() {
+
+    $dop = $this->conn;
+
+    $dop->insert( 'dummy', array(
+      'test' => 'hello?'
+    ) )->exec();
+
+    $dop->update( 'dummy', array(
+      'test' => 'hello? ::world'
+    ) )->exec();
+
+    $dop->query( 'dummy' )
+      ->where( 'test', 'hello?' )
+      ->where( 'test', '::world' )
+      ->exec();
+
+    $dop( '::insert', array(
+      'insert' => $dop->insert( 'dummy', array(
+        'test' => 'hello?'
+      ) )
+    ) )->exec();
+
+  }
+
 }
