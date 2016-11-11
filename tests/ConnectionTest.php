@@ -398,21 +398,21 @@ class ConnectionTest extends BaseTest {
     $dop = $this->conn;
 
     $dop->insert( 'dummy', array(
-      'test' => 'hello?'
+      'name' => 'hello?'
     ) )->exec();
 
     $dop->update( 'dummy', array(
-      'test' => 'hello? ::world'
+      'name' => 'hello? ::world'
     ) )->exec();
 
     $dop->query( 'dummy' )
-      ->where( 'test', 'hello?' )
-      ->where( 'test', '::world' )
+      ->where( 'name', 'hello?' )
+      ->where( 'name', '::world' )
       ->exec();
 
     $dop( '::insert', array(
       'insert' => $dop->insert( 'dummy', array(
-        'test' => 'hello?'
+        'name' => 'hello?'
       ) )
     ) )->exec();
 

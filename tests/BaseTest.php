@@ -109,7 +109,8 @@ class BaseTest extends PHPUnit_Framework_TestCase {
 
     $this->exec( "CREATE TABLE dummy (
       id $p,
-      test INTEGER
+      test INTEGER,
+      name VARCHAR(30)
     )" );
 
     self::$pdo->commit();
