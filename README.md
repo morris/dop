@@ -43,11 +43,11 @@ and enable powerful composition:
 $authorIds = [ 1, 2, 3 ];
 $orderByTitle = $dop( 'order by title asc' );
 $posts = $dop( 'select id from post where author_id in ( ?? ) ??',
-  array( $authorIds, $orderByTitle ) );
+  [ $authorIds, $orderByTitle ] );
 
 // use $posts as sub query
 $cats = $dop( 'select * from categorization where post_id in ( ::posts )',
-  array( 'posts' => $posts ) )->exec();
+  [ 'posts' => $posts ] )->exec();
 ```
 
 Internally, these parameters are resolved before statement preparation.
