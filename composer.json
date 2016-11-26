@@ -28,6 +28,7 @@
 
   "scripts": {
     "api": "php api.php > API.md",
-    "test": "vendor/bin/phpunit"
+    "test": "vendor/bin/phpunit",
+    "cover": "vendor/bin/phpunit --coverage-html coverage"
   }
 }

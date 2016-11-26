@@ -15,19 +15,19 @@ Its extended parameters allow arbitrary values like arrays and SQL fragments.
 $pdo = new PDO( 'sqlite:blog.sqlite3' );
 $dop = new Dop\Connection( $pdo );
 
-// Get some posts
-$posts = $dop->query( 'post' )->where( 'is_published = ?', [ 1 ] )->exec();
+// Find published posts
+$posts = $dop->query( 'post' )->where( 'is_published = ?', [ 1 ] )->fetchAll();
 
 // Get categorizations
 $categorizations = $dop(
   'select * from categorization where post_id in ( ?? )',
-  [ $posts->map( 'id' ) ]
-)->exec();
+  [ $dop->map( $posts, 'id' ) ]
+)->fetchAll();
 
 // Find posts with more than 3 categorizations
 $catCount = $dop( 'select count( * ) from categorization where post_id = post.id' );
 $posts = $dop( 'select * from post where ( ::catCount ) >= 3',
-  [ 'catCount' => $catCount ] )->exec();
+  [ 'catCount' => $catCount ] )->fetchAll();
 ```
 
 __See [API.md](API.md) for a complete API reference.__
@@ -47,12 +47,12 @@ $posts = $dop( 'select id from post where author_id in ( ?? ) ??',
 
 // use $posts as sub query
 $cats = $dop( 'select * from categorization where post_id in ( ::posts )',
-  [ 'posts' => $posts ] )->exec();
+  [ 'posts' => $posts ] )->fetchAll();
 ```
 
 Internally, these parameters are resolved before statement preparation.
 Note that due to the current implementation using regular expressions,
-you should *never* insert quoted strings manually. Always use bound parameters.
+you should *never* use quoted strings directly. Always use bound parameters.
 
 
 ## Installation

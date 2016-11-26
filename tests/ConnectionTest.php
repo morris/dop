@@ -255,7 +255,7 @@ class ConnectionTest extends BaseTest {
       array( 'test' => 1 ),
       array( 'test' => 2 ),
       array( 'test' => 3 )
-    ), $conn->query( 'dummy' )->select( 'test' )->jsonSerialize() );
+    ), $conn->query( 'dummy' )->select( 'test' )->fetchAll() );
 
   }
 
@@ -324,10 +324,12 @@ class ConnectionTest extends BaseTest {
       $conn->update( 'dummy', array() )->exec();
       $conn->update( 'dummy', array( 'test' => 42 ) )->exec();
       $conn->update( 'dummy', array( 'test' => 42 ) )->where( 'test', 1 )->exec();
+      $conn->update( 'dummy', new \ArrayIterator( array( 'test' => 42 ) ) )->where( 'test', 1 )->exec();
     } );
 
     $this->assertEquals( array(
       "UPDATE `dummy` SET `test` = '42' WHERE 1=1",
+      "UPDATE `dummy` SET `test` = '42' WHERE `test` = '1'",
       "UPDATE `dummy` SET `test` = '42' WHERE `test` = '1'"
     ), $this->statements );
 
@@ -354,9 +356,16 @@ class ConnectionTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $raw = "SELET * FROM dummy WHERE test='::test' AND foo=::test and ?? = 1";
+    $raw = "SELET * FROM dummy WHERE test='::test' AND foo=::test and ?? = ?";
     $frag = $conn->raw( $raw );
 
+    $this->assertEquals( $frag, $frag->resolve() );
+    $this->assertEquals( $raw, (string) $frag );
+    $this->assertEquals( $raw, (string) $frag->resolve() );
+
+    $frag = $frag->bind( 0, 1 );
+
+    $this->assertEquals( $frag, $frag->resolve() );
     $this->assertEquals( $raw, (string) $frag );
     $this->assertEquals( $raw, (string) $frag->resolve() );
 
@@ -366,19 +375,19 @@ class ConnectionTest extends BaseTest {
 
     $dop = $this->conn;
 
-    // Get some posts
-    $posts = $dop->query( 'post' )->where( 'is_published = ?', array( 1 ) )->exec();
+    // Find published posts
+    $posts = $dop->query( 'post' )->where( 'is_published = ?', array( 1 ) )->fetchAll();
 
     // Get categorizations
     $categorizations = $dop(
       'select * from categorization where post_id in ( ?? )',
-      array( $posts->map( 'id' ) )
-    )->exec();
+      array( $dop->map( $posts, 'id' ) )
+    )->fetchAll();
 
     // Find posts with more than 3 categorizations
     $catCount = $dop( 'select count( * ) from categorization where post_id = post.id' );
     $posts = $dop( 'select * from post where ( ::catCount ) >= 3',
-      array( 'catCount' => $catCount ) )->exec();
+      array( 'catCount' => $catCount ) )->fetchAll();
 
     //
 
@@ -415,6 +424,85 @@ class ConnectionTest extends BaseTest {
         'name' => 'hello?'
       ) )
     ) )->exec();
+
+  }
+
+  function testMap() {
+
+    $conn = $this->conn;
+
+    $this->assertEquals( array( 11, 12, 13 ), $conn->map( $conn->query( 'post' ), 'id' ) );
+
+    $this->assertEquals( array(
+      array(
+        'id' => 11,
+        'title' => 'Championship won'
+      ),
+      array(
+        'id' => 12,
+        'title' => 'Foo released'
+      ),
+      array(
+        'id' => 13,
+        'title' => 'Bar released'
+      )
+    ), $conn->map( $conn->query( 'post' ), array( 'id', 'title' ) ) );
+
+    $this->assertEquals( array(
+      'Championship won: 11',
+      'Foo released: 12',
+      'Bar released: 13'
+    ), $conn->map( $conn->query( 'post' ), function ( $row ) {
+      return $row[ 'title' ] . ': ' . $row[ 'id' ];
+    } ) );
+
+  }
+
+  function testFilter() {
+
+    $conn = $this->conn;
+
+    $this->assertEquals( array(
+      array(
+        'id' => '11',
+        'title' => 'Championship won',
+        'is_published' => '1',
+        'date_published' => '2014-09-18',
+        'author_id' => '1',
+        'editor_id' => null
+      ),
+    ), $conn->filter( $conn->query( 'post' ), 'id', 11 ) );
+
+    $this->assertEquals( array(), $conn->filter( $conn->query( 'post' ), 'id', 99 ) );
+
+    $this->assertEquals( array(
+      array(
+        'id' => '11',
+        'title' => 'Championship won',
+        'is_published' => '1',
+        'date_published' => '2014-09-18',
+        'author_id' => '1',
+        'editor_id' => null
+      ),
+    ), $conn->filter( $conn->query( 'post' )->exec(), array( 'id' => 11, 'title' => 'Championship won' ) ) );
+
+    $this->assertEquals( array(), $conn->filter( $conn->query( 'post' ),
+      array( 'id' => 99, 'title' => 'Championship won' )
+    ) );
+
+    $this->assertEquals( 3, count( $conn->filter( $conn->query( 'post' ), array() ) ) );
+
+    $this->assertEquals( 2, count( $conn->filter( $conn->query( 'post' ), function ( $row ) {
+      return $row[ 'id' ] > 11;
+    } ) ) );
+
+    $notFirst = $conn->filter( $conn->query( 'post' ), function ( $row ) {
+      return $row[ 'id' ] > 11;
+    } );
+
+    $this->assertTrue( isset( $notFirst[ 0 ] ) );
+    $this->assertTrue( isset( $notFirst[ 1 ] ) );
+    $this->assertFalse( isset( $notFirst[ 3 ] ) );
 
   }
 

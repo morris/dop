@@ -1,9 +1,13 @@
 # Changelog
 
+## master
+
+- Revised API with breaking changes
+
 ## v0.1.2
 
-- Fix raw SQL handling
+- Fixed raw SQL handling
 
 ## v0.1.1
 
-- Fix numeric indexing of `Result::filter`
+- Fixed numeric indexing of `Result::filter`

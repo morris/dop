@@ -17,15 +17,14 @@ class BaseTest extends PHPUnit_Framework_TestCase {
 
   }
 
-  function beforeExec( $sql ) {
+  function beforeExec( $statement ) {
 
-    $statement = $this->str( $sql );
-    $params = $sql->resolve()->params();
+    $sql = $this->str( $statement );
 
-    if ( strtoupper( substr( $statement, 0, 6 ) ) !== 'SELECT' ) self::$dirtyData = true;
+    if ( strtoupper( substr( $sql, 0, 6 ) ) !== 'SELECT' ) self::$dirtyData = true;
 
-    $this->statements[] = $statement;
-    $this->params[] = $params;
+    $this->statements[] = $sql;
+    $this->params[] = $statement->resolve()->params();
 
   }
 
@@ -204,8 +203,8 @@ class BaseTest extends PHPUnit_Framework_TestCase {
 
   }
 
-  function exec( $q ) {
-    return self::$pdo->exec( $q );
+  function exec( $s ) {
+    return self::$pdo->exec( $s );
   }
 
   function driver() {

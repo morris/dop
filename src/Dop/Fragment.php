@@ -8,7 +8,7 @@ namespace Dop;
  *
  * Immutable
  */
-class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
+class Fragment implements \IteratorAggregate {
 
   /**
    * Constructor
@@ -17,7 +17,7 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * @param string $sql
    * @param array $params
    */
-  function __construct( $conn, $sql = '', array $params = array() ) {
+  function __construct( $conn, $sql = '', $params = array() ) {
     $this->conn = $conn;
     $this->sql = $sql;
     $this->params = $params;
@@ -26,11 +26,12 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   /**
    * Return a new fragment with the given parameter(s).
    *
-   * @param array|string $params
-   * @param mixed $value
+   * @param array|string|int $params Array of key-value parameters or parameter name
+   * @param mixed $value If $params is a parameter name, bind to this value
    * @return Fragment
    */
   function bind( $params, $value = null ) {
+    if ( empty( $params ) && $params !== 0 ) return $this;
     if ( !is_array( $params ) ) {
       return $this->bind( array( $params => $value ) );
     }
@@ -39,20 +40,6 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
       $clone->params[ $key ] = $value;
     }
     return $clone;
-  }
-
-  /**
-   * Return resolved fragment containing a prepared PDO statement.
-   *
-   * @param array $params
-   * @return Fragment
-   */
-  function prepare() {
-    if ( $this->pdoStatement ) return $this;
-    $prepared = $this->resolve();
-    $prepared->pdoStatement = $this->conn()->pdo()
-      ->prepare( (string) $prepared );
-    return $prepared;
   }
 
   /**
@@ -66,61 +53,41 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * Execute statement and return result.
    *
    * @param array $params
-   * @return Result
+   * @return Result The prepared and executed result
    */
-  function exec( $params = null ) {
-    if ( $params !== null ) return $this->bind( $params )->exec();
-    return $this->conn()->exec( $this );
+  function exec( $params = array() ) {
+    return $this->prepare( $params )->exec();
   }
 
   /**
-   * Execute and return all rows.
+   * Return prepared statement from this fragment.
    *
-   * @return array
+   * @param array $params
+   * @return Result The prepared result
    */
-  function all() {
-    return $this->exec()->all();
+  function prepare( $params = array() ) {
+    return new Result( $this->bind( $params ) );
   }
 
+  //
+
   /**
-   * Execute and return first row in result, if any.
+   * Execute, fetch and return first row, if any.
    *
+   * @param int $offset Offset to skip
    * @return array|null
    */
-  function first() {
-    return $this->exec()->first();
+  function fetch( $offset = 0 ) {
+    return $this->exec()->fetch( $offset );
   }
 
   /**
-   * Execute and return rows mapped to a column, multiple columns or using
-   * a function.
+   * Execute, fetch and return all rows.
    *
-   * @param string|array|function $fn
    * @return array
    */
-  function map( $fn ) {
-    return $this->exec()->map( $fn );
-  }
-
-  /**
-   * Execute and return rows filtered by column-value equality (non-strict)
-   * or function.
-   *
-   * @param string|array|function $fn
-   * @param mixed $value
-   * @return array
-   */
-  function filter( $fn, $value = null ) {
-    return $this->exec()->filter( $fn, $value );
-  }
-
-  /**
-   * Executed and return number of affected rows.
-   *
-   * @return int
-   */
-  function affected() {
-    return $this->exec()->affected();
+  function fetchAll() {
+    return $this->exec()->fetchAll();
   }
 
   //
@@ -214,7 +181,7 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   }
 
   /**
-   * Get associated connection.
+   * Get connection.
    *
    * @return Connection
    */
@@ -223,11 +190,11 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   }
 
   /**
-   * Get SQL string of this fragment.
+   * Get resolved SQL string of this fragment.
    *
    * @return string
    */
-  function string() {
+  function toString() {
     return $this->resolve()->sql;
   }
 
@@ -240,21 +207,14 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
     return $this->params;
   }
 
-  /**
-   * Return prepared internal PDO statement, if any.
-   *
-   * @return \PDOStatement
-   */
-  function pdoStatement() {
-    return $this->pdoStatement;
-  }
+  //
 
   /**
-   * @see Fragment::string
+   * @see Fragment::toString
    */
   function __toString() {
     try {
-      return $this->string();
+      return $this->toString();
     } catch ( \Exception $ex ) {
       return $ex->getMessage();
     }
@@ -263,30 +223,12 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   //
 
   /**
-   * Execute and return result iterator
+   * Execute and return iterable Result.
    *
-   * @return \ArrayIterator
+   * @return \Iterator
    */
   function getIterator() {
-    return $this->exec()->getIterator();
-  }
-
-  /**
-   * Execute and return row count of result
-   *
-   * @return int
-   */
-  function count() {
-    return $this->exec()->count();
-  }
-
-  /**
-   * Execute and return JSON representation of result
-   *
-   * @return array
-   */
-  function jsonSerialize() {
-    return $this->exec()->jsonSerialize();
+    return $this->exec();
   }
 
   //
@@ -390,9 +332,11 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
           $this->resolveParams[ $key ] = $value;
         }
       }
+
+      $replacement = $replacement->toString();
     }
 
-    return (string) $replacement;
+    return $replacement;
 
   }
 
@@ -412,7 +356,11 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * @ignore
    */
   function __clone() {
-    if ( $this->resolved !== $this ) $this->resolved = null;
+    if ( $this->resolved && $this->resolved->sql === $this->sql ) {
+      $this->resolved = $this;
+    } else {
+      $this->resolved = null;
+    }
   }
 
   //
@@ -434,8 +382,5 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
 
   /** @var array */
   protected $resolveParams;
-
-  /** @var \PDOStatement */
-  protected $pdoStatement;
 
 }

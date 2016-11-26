@@ -3,94 +3,77 @@
 namespace Dop;
 
 /**
- * Represents the result of a SQL statement.
- * May contain rows and the number of affected rows.
+ * Represents a prepared and/or executed statement.
  *
- * Immutable
+ * Mutable because the contained PDOStatement is mutable.
+ * Avoid using Results directly unless optimizing for performance.
+ * Can only be iterated once per execution.
+ * Following iterations yield no results.
  */
-class Result implements \IteratorAggregate, \Countable, \JsonSerializable {
+class Result implements \Iterator {
 
   /**
    * Constructor
-   */
-  function __construct( $rows = array(), $affected = 0 ) {
-    $this->rows = $rows;
-    $this->count = count( $this->rows );
-    $this->affected = $affected;
-  }
-
-  /**
-   * Return all rows as an array.
    *
-   * @return array
+   * @param Fragment $statement
    */
-  function all() {
-    return $this->rows;
-  }
-
-  /**
-   * Return first row in result, if any.
-   *
-   * @return array
-   */
-  function first() {
-    return $this->count > 0 ? $this->rows[ 0 ] : null;
-  }
-
-  /**
-   * Return rows mapped to a column, multiple columns or using a function.
-   *
-   * @param int|string|array|function $fn Column, columns or function
-   * @return array
-   */
-  function map( $fn ) {
-
-    if ( is_array( $fn ) ) {
-      $columns = $fn;
-      $fn = function ( $row ) use ( $columns ) {
-        $mapped = array();
-        foreach ( $columns as $column ) {
-          $mapped[ $column ] = @$row[ $column ];
-        }
-        return $mapped;
-      };
-    } else if ( !is_callable( $fn ) ) {
-      $column = $fn;
-      $fn = function ( $row ) use ( $column ) {
-        return $row[ $column ];
-      };
+  function __construct( $statement ) {
+    $this->statement = $statement->resolve();
+    $conn = $statement->conn();
+    if ( $statement->toString() !== $conn::EMPTY_STATEMENT ) {
+      $this->pdoStatement = $conn->pdo()->prepare( $statement->toString() );
     }
+  }
 
-    return array_map( $fn, $this->rows );
+  /**
+   * Execute the prepared statement (again).
+   *
+   * @param array $params
+   * @return $this
+   */
+  function exec( $params = array() ) {
+
+    if ( !$this->pdoStatement() ) return $this;
+
+    $statement = $this->statement->bind( $params );
+    $statement->conn()->beforeExec( $statement );
+    $this->pdoStatement()->execute( $statement->params() );
+
+    return $this;
 
   }
 
   /**
-   * Return rows filtered by column-value equality (non-strict) or function.
+   * Fetch next row.
    *
-   * @param int|string|array|function $fn Column, column-value pairs or function
-   * @param mixed $value
+   * @param int $offset Offset in rows
+   * @param int $orientation One of the PDO::FETCH_ORI_* constants
+   * @return array|null
+   */
+  function fetch( $offset = 0, $orientation = \PDO::FETCH_ORI_NEXT ) {
+    if ( !$this->pdoStatement() ) return null;
+    $row = $this->pdoStatement()->fetch( \PDO::FETCH_ASSOC, $orientation, $offset );
+    return $row ? $row : null;
+  }
+
+  /**
+   * Fetch all rows.
+   *
    * @return array
    */
-  function filter( $fn, $value = null ) {
+  function fetchAll() {
+    if ( !$this->pdoStatement() ) return array();
+    return $this->pdoStatement()->fetchAll( \PDO::FETCH_ASSOC );
+  }
 
-    if ( is_array( $fn ) ) {
-      $columns = $fn;
-      $fn = function ( $row ) use ( $columns ) {
-        foreach ( $columns as $column => $value ) {
-          if ( @$row[ $column ] != $value ) return false;
-        }
-        return true;
-      };
-    } else if ( !is_callable( $fn ) ) {
-      $column = $fn;
-      $fn = function ( $row ) use ( $column, $value ) {
-        return @$row[ $column ] == $value;
-      };
-    }
-
-    return array_values( array_filter( $this->rows, $fn ) );
-
+  /**
+   * Close the cursor in this result, if any.
+   *
+   * @return $this
+   */
+  function close() {
+    if ( $this->pdoStatement() ) $this->pdoStatement()->closeCursor();
+    return $this;
   }
 
   /**
@@ -99,47 +82,68 @@ class Result implements \IteratorAggregate, \Countable, \JsonSerializable {
    * @return int
    */
   function affected() {
-    return $this->affected;
+    if ( $this->pdoStatement() ) return $this->pdoStatement()->rowCount();
+    return 0;
+  }
+
+  /**
+   * @return \PDOStatement
+   */
+  function pdoStatement() {
+    return $this->pdoStatement;
   }
 
   //
 
   /**
-   * Return row iterator.
-   *
-   * @return \ArrayIterator
+   * @internal
    */
-  function getIterator() {
-    return new \ArrayIterator( $this->rows );
+  function current() {
+    return $this->current;
   }
 
   /**
-   * Return row count.
-   *
-   * @return int
+   * @internal
    */
-  function count() {
-    return $this->count;
+  function key() {
+    return $this->key;
   }
 
   /**
-   * Return JSON representation of rows.
-   *
-   * @return array
+   * @internal
    */
-  function jsonSerialize() {
-    return $this->rows;
+  function next() {
+    $this->current = $this->fetch();
+    ++$this->key;
+  }
+
+  /**
+   * @internal
+   */
+  function rewind() {
+    $this->current = $this->fetch();
+    $this->key = 0;
+  }
+
+  /**
+   * @internal
+   */
+  function valid() {
+    return $this->current;
   }
 
   //
+
+  /** @var Fragment */
+  protected $statement;
+
+  /** @var \PDOStatement */
+  protected $pdoStatement;
 
   /** @var array */
-  protected $rows = array();
+  protected $current;
 
   /** @var int */
-  protected $count = 0;
-
-  /** @var int */
-  protected $affected = 0;
+  protected $key;
 
 }

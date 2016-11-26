@@ -6,8 +6,7 @@
 namespace Dop;
 
 /**
- * Represents a database connection, capable of writing SQL fragments and
- * executing statements.
+ * Represents a database connection and a factory for SQL fragments.
  *
  * Immutable
  */
@@ -59,7 +58,7 @@ class Connection {
    *
    * @param string $table
    * @param array|\Traversable $rows
-   * @return Result The insert result for the last row
+   * @return Result The prepared result
    */
   function insertPrepared( $table, $rows );
 
@@ -112,7 +111,7 @@ class Connection {
    * Build an ORDER BY fragment.
    *
    * @param string $column
-   * @param string $direction
+   * @param string $direction Must be ASC or DESC
    * @param Fragment|null $before
    * @return Fragment
    */
@@ -188,7 +187,7 @@ class Connection {
   /**
    * Quote identifier(s).
    *
-   * @param mixed $ident
+   * @param mixed $ident Must be 64 or less characters.
    * @return Fragment
    */
   function ident( $ident );
@@ -241,32 +240,51 @@ class Connection {
    */
   function transaction( $t );
 
-  /**
-   * Execute an SQL statement and return the result.
-   *
-   * @param string|Fragment $statement
-   * @param array $params
-   * @return Result
-   */
-  function exec( $statement, $params = array() );
+  //
 
   /**
-   * Create a result.
+   * Return whether the given array or Traversable is empty.
    *
-   * @param array $rows
-   * @param int $affected
-   * @return Result
+   * @param array|\Traversable
+   * @return bool
    */
-  function result( $rows = array(), $affected = 0 );
+  function empt( $traversable );
+
+  /**
+   * Get list of all columns used in the given rows.
+   *
+   * @param array|\Traversable $rows
+   * @return array
+   */
+  function columns( $rows );
+
+  /**
+   * Return rows mapped to a column, multiple columns or using a function.
+   *
+   * @param array|Fragment|Result $rows Rows
+   * @param int|string|array|function $fn Column, columns or function
+   * @return array
+   */
+  function map( $rows, $fn );
+
+  /**
+   * Return rows filtered by column-value equality (non-strict) or function.
+   *
+   * @param array|Fragment|Result $rows Rows
+   * @param int|string|array|function $fn Column, column-value pairs or function
+   * @param mixed $value
+   * @return array
+   */
+  function filter( $rows, $fn, $value = null );
+
+  //
 
   /**
    * Called before executing a statement.
    *
-   * If a value is returned, execution is skipped and the value is returned
-   * instead. The default implementation does nothing.
+   * The default implementation does nothing.
    *
    * @param Fragment $statement
-   * @return mixed
    */
   function beforeExec( $statement );
 
@@ -289,7 +307,7 @@ class Connection {
   //
 
   /** @var string */
-  const NOOP = 'SELECT 1 WHERE 0=1';
+  const EMPTY_STATEMENT = 'SELECT 1 WHERE 0=1';
 
 }
 
@@ -299,7 +317,7 @@ class Connection {
  *
  * Immutable
  */
-class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
+class Fragment implements \IteratorAggregate {
 
   /**
    * Constructor
@@ -308,24 +326,16 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * @param string $sql
    * @param array $params
    */
-  function __construct( $conn, $sql = '', array $params = array() );
+  function __construct( $conn, $sql = '', $params = array() );
 
   /**
    * Return a new fragment with the given parameter(s).
    *
-   * @param array|string $params
-   * @param mixed $value
+   * @param array|string|int $params Array of key-value parameters or parameter name
+   * @param mixed $value If $params is a parameter name, bind to this value
    * @return Fragment
    */
   function bind( $params, $value = null );
-
-  /**
-   * Return resolved fragment containing a prepared PDO statement.
-   *
-   * @param array $params
-   * @return Fragment
-   */
-  function prepare();
 
   /**
    * @see Fragment::exec
@@ -336,49 +346,34 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    * Execute statement and return result.
    *
    * @param array $params
-   * @return Result
+   * @return Result The prepared and executed result
    */
-  function exec( $params = null );
+  function exec( $params = array() );
 
   /**
-   * Execute and return all rows.
+   * Return prepared statement from this fragment.
    *
-   * @return array
+   * @param array $params
+   * @return Result The prepared result
    */
-  function all();
+  function prepare( $params = array() );
+
+  //
 
   /**
-   * Execute and return first row in result, if any.
+   * Execute, fetch and return first row, if any.
    *
+   * @param int $offset Offset to skip
    * @return array|null
    */
-  function first();
+  function fetch( $offset = 0 );
 
   /**
-   * Execute and return rows mapped to a column, multiple columns or using
-   * a function.
+   * Execute, fetch and return all rows.
    *
-   * @param string|array|function $fn
    * @return array
    */
-  function map( $fn );
-
-  /**
-   * Execute and return rows filtered by column-value equality (non-strict)
-   * or function.
-   *
-   * @param string|array|function $fn
-   * @param mixed $value
-   * @return array
-   */
-  function filter( $fn, $value = null );
-
-  /**
-   * Executed and return number of affected rows.
-   *
-   * @return int
-   */
-  function affected();
+  function fetchAll();
 
   //
 
@@ -440,18 +435,18 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
   function paged( $pageSize, $page );
 
   /**
-   * Get associated connection.
+   * Get connection.
    *
    * @return Connection
    */
   function conn();
 
   /**
-   * Get SQL string of this fragment.
+   * Get resolved SQL string of this fragment.
    *
    * @return string
    */
-  function string();
+  function toString();
 
   /**
    * Get bound parameters.
@@ -460,40 +455,21 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
    */
   function params();
 
-  /**
-   * Return prepared internal PDO statement, if any.
-   *
-   * @return \PDOStatement
-   */
-  function pdoStatement();
+  //
 
   /**
-   * @see Fragment::string
+   * @see Fragment::toString
    */
   function __toString();
 
   //
 
   /**
-   * Execute and return result iterator
+   * Execute and return iterable Result.
    *
-   * @return \ArrayIterator
+   * @return \Iterator
    */
   function getIterator();
-
-  /**
-   * Execute and return row count of result
-   *
-   * @return int
-   */
-  function count();
-
-  /**
-   * Execute and return JSON representation of result
-   *
-   * @return array
-   */
-  function jsonSerialize();
 
   //
 
@@ -520,48 +496,52 @@ class Fragment implements \IteratorAggregate, \Countable, \JsonSerializable {
 }
 
 /**
- * Represents the result of a SQL statement.
- * May contain rows and the number of affected rows.
+ * Represents a prepared and/or executed statement.
  *
- * Immutable
+ * Mutable because the contained PDOStatement is mutable.
+ * Avoid using Results directly unless optimizing for performance.
+ * Can only be iterated once per execution.
+ * Following iterations yield no results.
  */
-class Result implements \IteratorAggregate, \Countable, \JsonSerializable {
+class Result implements \Iterator {
 
   /**
    * Constructor
+   *
+   * @param Fragment $statement
    */
-  function __construct( $rows = array(), $affected = 0 );
+  function __construct( $statement );
 
   /**
-   * Return all rows as an array.
+   * Execute the prepared statement (again).
+   *
+   * @param array $params
+   * @return $this
+   */
+  function exec( $params = array() );
+
+  /**
+   * Fetch next row.
+   *
+   * @param int $offset Offset in rows
+   * @param int $orientation One of the PDO::FETCH_ORI_* constants
+   * @return array|null
+   */
+  function fetch( $offset = 0, $orientation = \PDO::FETCH_ORI_NEXT );
+
+  /**
+   * Fetch all rows.
    *
    * @return array
    */
-  function all();
+  function fetchAll();
 
   /**
-   * Return first row in result, if any.
+   * Close the cursor in this result, if any.
    *
-   * @return array
+   * @return $this
    */
-  function first();
-
-  /**
-   * Return rows mapped to a column, multiple columns or using a function.
-   *
-   * @param int|string|array|function $fn Column, columns or function
-   * @return array
-   */
-  function map( $fn );
-
-  /**
-   * Return rows filtered by column-value equality (non-strict) or function.
-   *
-   * @param int|string|array|function $fn Column, column-value pairs or function
-   * @param mixed $value
-   * @return array
-   */
-  function filter( $fn, $value = null );
+  function close();
 
   /**
    * Return number of affected rows.
@@ -570,28 +550,37 @@ class Result implements \IteratorAggregate, \Countable, \JsonSerializable {
    */
   function affected();
 
+  /**
+   * @return \PDOStatement
+   */
+  function pdoStatement();
+
   //
 
   /**
-   * Return row iterator.
-   *
-   * @return \ArrayIterator
+   * @internal
    */
-  function getIterator();
+  function current();
 
   /**
-   * Return row count.
-   *
-   * @return int
+   * @internal
    */
-  function count();
+  function key();
 
   /**
-   * Return JSON representation of rows.
-   *
-   * @return array
+   * @internal
    */
-  function jsonSerialize();
+  function next();
+
+  /**
+   * @internal
+   */
+  function rewind();
+
+  /**
+   * @internal
+   */
+  function valid();
 
 }
 

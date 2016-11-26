@@ -1,6 +1,6 @@
 <?php
 
-class SQLTest extends BaseTest {
+class FragmentTest extends BaseTest {
 
   function testResolve() {
 
@@ -57,25 +57,25 @@ class SQLTest extends BaseTest {
   function testInvoke() {
     $conn = $this->conn;
     $posts = $conn( 'SELECT * FROM post' );
-    $this->assertEquals( 3, count( $posts() ) );
+    $this->assertEquals( 3, count( $posts()->fetchAll() ) );
   }
 
   function testWhere() {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->where( 'test', null )->first();
-    $conn->query( 'dummy' )->where( 'test', 31 )->first();
-    $conn->query( 'dummy' )->where( 'test', array( 1, 2, 3 ) )->first();
-    $conn->query( 'dummy' )->where( array( 'test' => 31, 'id' => 1 ) )->first();
-    $conn->query( 'dummy' )->where( 'test = 31' )->first();
-    $conn->query( 'dummy' )->where( 'test = ?', array( 31 ) )->first();
-    $conn->query( 'dummy' )->where( 'test = ?', array( 32 ) )->first();
-    $conn->query( 'dummy' )->where( 'test = :param', array( 'param' => 31 ) )->first();
+    $conn->query( 'dummy' )->where( 'test', null )->fetch();
+    $conn->query( 'dummy' )->where( 'test', 31 )->fetch();
+    $conn->query( 'dummy' )->where( 'test', array( 1, 2, 3 ) )->fetch();
+    $conn->query( 'dummy' )->where( array( 'test' => 31, 'id' => 1 ) )->fetch();
+    $conn->query( 'dummy' )->where( 'test = 31' )->fetch();
+    $conn->query( 'dummy' )->where( 'test = ?', array( 31 ) )->fetch();
+    $conn->query( 'dummy' )->where( 'test = ?', array( 32 ) )->fetch();
+    $conn->query( 'dummy' )->where( 'test = :param', array( 'param' => 31 ) )->fetch();
     $conn->query( 'dummy' )
       ->where( 'test < :a', array( 'a' => 31 ) )
       ->where( 'test > :b', array( 'b' => 0 ) )
-      ->first();
+      ->fetch();
 
     $this->assertEquals( array(
       "SELECT * FROM `dummy` WHERE `test` IS NULL",
@@ -107,14 +107,14 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->whereNot( 'test', null )->first();
-    $conn->query( 'dummy' )->whereNot( 'test', 31 )->first();
-    $conn->query( 'dummy' )->whereNot( 'test', array( 1, 2, 3 ) )->first();
-    $conn->query( 'dummy' )->whereNot( array( 'test' => 31, 'id' => 1 ) )->first();
+    $conn->query( 'dummy' )->whereNot( 'test', null )->fetch();
+    $conn->query( 'dummy' )->whereNot( 'test', 31 )->fetch();
+    $conn->query( 'dummy' )->whereNot( 'test', array( 1, 2, 3 ) )->fetch();
+    $conn->query( 'dummy' )->whereNot( array( 'test' => 31, 'id' => 1 ) )->fetch();
     $conn->query( 'dummy' )
       ->whereNot( 'test', null )
       ->whereNot( 'test', 31 )
-      ->first();
+      ->fetch();
 
     $this->assertEquals( array(
       "SELECT * FROM `dummy` WHERE `test` IS NOT NULL",
@@ -138,7 +138,7 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->orderBy( 'id', 'DESC' )->orderBy( 'test' )->first();
+    $conn->query( 'dummy' )->orderBy( 'id', 'DESC' )->orderBy( 'test' )->fetch();
 
     $this->assertEquals( array(
       "SELECT * FROM `dummy` WHERE 1=1 ORDER BY `id` DESC, `test` ASC",
@@ -159,9 +159,9 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->limit( 3 )->first();
-    $conn->query( 'dummy' )->limit( 3, 10 )->first();
-    $conn->query( 'dummy' )->limit()->first();
+    $conn->query( 'dummy' )->limit( 3 )->fetch();
+    $conn->query( 'dummy' )->limit( 3, 10 )->fetch();
+    $conn->query( 'dummy' )->limit()->fetch();
 
     $this->assertEquals( array(
       "SELECT * FROM `dummy` WHERE 1=1  LIMIT 3",
@@ -175,8 +175,8 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->paged( 10, 1 )->first();
-    $conn->query( 'dummy' )->paged( 10, 3 )->first();
+    $conn->query( 'dummy' )->paged( 10, 1 )->fetch();
+    $conn->query( 'dummy' )->paged( 10, 3 )->fetch();
 
     $this->assertEquals( array(
       "SELECT * FROM `dummy` WHERE 1=1  LIMIT 10 OFFSET 0",
@@ -189,9 +189,9 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    $conn->query( 'dummy' )->select( 'test' )->first();
-    $conn->query( 'dummy' )->select( 'test', 'id' )->first();
-    $conn->query( 'dummy' )->select( 'test' )->select( 'id' )->first();
+    $conn->query( 'dummy' )->select( 'test' )->fetch();
+    $conn->query( 'dummy' )->select( 'test', 'id' )->fetch();
+    $conn->query( 'dummy' )->select( 'test' )->select( 'id' )->fetch();
 
     $this->assertEquals( array(
       "SELECT `test` FROM `dummy` WHERE 1=1",
@@ -203,104 +203,25 @@ class SQLTest extends BaseTest {
 
   function testFirst() {
     $conn = $this->conn;
-    $first = $conn->query( 'post' )->first();
+    $first = $conn->query( 'post' )->fetch();
     $this->assertEquals( 'Championship won', $first[ 'title' ] );
   }
 
   function testAll() {
     $conn = $this->conn;
-    $this->assertEquals( 3, count( $conn->query( 'post' )->all() ) );
-  }
-
-  function testMap() {
-
-    $conn = $this->conn;
-
-    $this->assertEquals( array( 11, 12, 13 ), $conn->query( 'post' )->map( 'id' ) );
-
-    $this->assertEquals( array(
-      array(
-        'id' => 11,
-        'title' => 'Championship won'
-      ),
-      array(
-        'id' => 12,
-        'title' => 'Foo released'
-      ),
-      array(
-        'id' => 13,
-        'title' => 'Bar released'
-      )
-    ), $conn->query( 'post' )->map( array( 'id', 'title' ) ) );
-
-    $this->assertEquals( array(
-      'Championship won: 11',
-      'Foo released: 12',
-      'Bar released: 13'
-    ), $conn->query( 'post' )->map( function ( $row ) {
-      return $row[ 'title' ] . ': ' . $row[ 'id' ];
-    } ) );
-
-  }
-
-  function testFilter() {
-
-    $conn = $this->conn;
-
-    $this->assertEquals( array(
-      array(
-        'id' => '11',
-        'title' => 'Championship won',
-        'is_published' => '1',
-        'date_published' => '2014-09-18',
-        'author_id' => '1',
-        'editor_id' => null
-      ),
-    ), $conn->query( 'post' )->filter( 'id', 11 ) );
-
-    $this->assertEquals( array(), $conn->query( 'post' )->filter( 'id', 99 ) );
-
-    $this->assertEquals( array(
-      array(
-        'id' => '11',
-        'title' => 'Championship won',
-        'is_published' => '1',
-        'date_published' => '2014-09-18',
-        'author_id' => '1',
-        'editor_id' => null
-      ),
-    ), $conn->query( 'post' )->filter( array( 'id' => 11, 'title' => 'Championship won' ) ) );
-
-    $this->assertEquals( array(), $conn->query( 'post' )->filter(
-      array( 'id' => 99, 'title' => 'Championship won' )
-    ) );
-
-    $this->assertEquals( 3, count( $conn->query( 'post' )->filter( array() ) ) );
-
-    $this->assertEquals( 2, count( $conn->query( 'post' )->filter( function ( $row ) {
-      return $row[ 'id' ] > 11;
-    } ) ) );
-
-    $notFirst = $conn->query( 'post' )->filter( function ( $row ) {
-      return $row[ 'id' ] > 11;
-    } );
-
-    $this->assertTrue( isset( $notFirst[ 0 ] ) );
-    $this->assertTrue( isset( $notFirst[ 1 ] ) );
-    $this->assertFalse( isset( $notFirst[ 3 ] ) );
-
+    $this->assertEquals( 3, count( $conn->query( 'post' )->fetchAll() ) );
   }
 
   function testAffected() {
 
     $conn = $this->conn;
 
-    $this->assertEquals( 3, count( $conn->query( 'post' ) ) );
+    $this->assertEquals( 3, count( $conn->query( 'post' )->fetchAll() ) );
 
-    $a = $conn( 'UPDATE post SET title = ?', array( 'fooz' ) )->affected();
+    $a = $conn( 'UPDATE post SET title = ?', array( 'fooz' ) )->exec()->affected();
     $this->assertEquals( 3, $a );
 
-    $a = $conn( 'UPDATE post SET title = ? WHERE 0=1', array( 'test' ) )->affected();
+    $a = $conn( 'UPDATE post SET title = ? WHERE 0=1', array( 'test' ) )->exec()->affected();
     $this->assertEquals( 0, $a );
 
   }
@@ -309,28 +230,12 @@ class SQLTest extends BaseTest {
 
     $conn = $this->conn;
 
-    foreach ( $conn->query( 'post' ) as $post ) {
-      $this->assertTrue( !!$post[ 'id' ] );
+    $ids = array();
+    foreach ( $conn->query( 'post' ) as $i => $post ) {
+      $ids[ $i ] = $post[ 'id' ];
     }
 
-  }
-
-  function testJsonSerialize() {
-
-    // only supported for PHP >= 5.4.0
-    if ( version_compare( phpversion(), '5.4.0', '<' ) ) return;
-
-    $conn = $this->conn;
-
-    $json = json_encode( $conn->query( 'post' )->select( 'id' ) );
-
-    try {
-      $expected = '[{"id":11},{"id":12},{"id":13}]';
-      $this->assertEquals( $expected, $json );
-    } catch ( \Exception $ex ) {
-      $expected = '[{"id":"11"},{"id":"12"},{"id":"13"}]';
-      $this->assertEquals( $expected, $json );
-    }
+    $this->assertEquals( array( '11', '12', '13' ), $ids );
 
   }
 

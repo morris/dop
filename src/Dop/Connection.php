@@ -3,8 +3,7 @@
 namespace Dop;
 
 /**
- * Represents a database connection, capable of writing SQL fragments and
- * executing statements.
+ * Represents a database connection and a factory for SQL fragments.
  *
  * Immutable
  */
@@ -68,9 +67,8 @@ class Connection {
    */
   function insertBatch( $table, $rows ) {
 
-    if ( count( $rows ) === 0 ) return $this( self::NOOP );
-
-    $columns = $this->getColumns( $rows );
+    if ( $this->empt( $rows ) ) return $this( self::EMPTY_STATEMENT );
+    $columns = $this->columns( $rows );
 
     $lists = array();
 
@@ -102,13 +100,12 @@ class Connection {
    *
    * @param string $table
    * @param array|\Traversable $rows
-   * @return Result The insert result for the last row
+   * @return Result The prepared result
    */
   function insertPrepared( $table, $rows ) {
 
-    if ( count( $rows ) === 0 ) return;
-
-    $columns = $this->getColumns( $rows );
+    if ( $this->empt( $rows ) ) return $this( self::EMPTY_STATEMENT )->prepare();
+    $columns = $this->columns( $rows );
 
     $prepared = $this( 'INSERT INTO ::table ( ::columns ) VALUES ::values', array(
       'table' => $this->table( $table ),
@@ -128,26 +125,6 @@ class Connection {
   }
 
   /**
-   * Get list of all columns used in the given rows.
-   *
-   * @param array|\Traversable $rows
-   * @return array
-   */
-  protected function getColumns( $rows ) {
-
-    $columns = array();
-
-    foreach ( $rows as $row ) {
-      foreach ( $row as $column => $value ) {
-        $columns[ $column ] = true;
-      }
-    }
-
-    return array_keys( $columns );
-
-  }
-
-  /**
    * Build an update statement.
    *
    * UPDATE $table SET $data [WHERE $where]
@@ -160,7 +137,7 @@ class Connection {
    */
   function update( $table, $data, $where = array(), $params = array() ) {
 
-    if ( empty( $data ) ) return $this( self::NOOP );
+    if ( $this->empt( $data ) ) return $this( self::EMPTY_STATEMENT );
 
     return $this( 'UPDATE ::table SET ::set WHERE ::where ::limit', array(
       'table' => $this->table( $table ),
@@ -264,7 +241,7 @@ class Connection {
    * Build an ORDER BY fragment.
    *
    * @param string $column
-   * @param string $direction
+   * @param string $direction Must be ASC or DESC
    * @param Fragment|null $before
    * @return Fragment
    */
@@ -471,7 +448,7 @@ class Connection {
   /**
    * Quote identifier(s).
    *
-   * @param mixed $ident
+   * @param mixed $ident Must be 64 or less characters.
    * @return Fragment
    */
   function ident( $ident ) {
@@ -570,67 +547,110 @@ class Connection {
 
   }
 
+  //
+
   /**
-   * Execute an SQL statement and return the result.
+   * Return whether the given array or Traversable is empty.
    *
-   * @param string|Fragment $statement
-   * @param array $params
-   * @return Result
+   * @param array|\Traversable
+   * @return bool
    */
-  function exec( $statement, $params = array() ) {
+  function empt( $traversable ) {
+    foreach ( $traversable as $_ ) return false;
+    return true;
+  }
 
-    $statement = $this( $statement, $params );
-    $resolved = $statement->resolve();
+  /**
+   * Get list of all columns used in the given rows.
+   *
+   * @param array|\Traversable $rows
+   * @return array
+   */
+  function columns( $rows ) {
 
-    if ( (string) $resolved === self::NOOP ) {
-      return $this->result();
+    if ( !$rows ) return array();
+    $columns = array();
+
+    foreach ( $rows as $row ) {
+      foreach ( $row as $column => $value ) {
+        $columns[ $column ] = true;
+      }
     }
 
-    $result = $this->beforeExec( $statement );
-    if ( $result ) return $result;
-
-    $prepared = $resolved->prepare();
-    $pdoStatement = $prepared->pdoStatement();
-    $pdoStatement->execute( $prepared->params() );
-
-    $rows = array();
-    $affected = 0;
-
-    try {
-      $rows = $pdoStatement->fetchAll( \PDO::FETCH_ASSOC );
-    } catch ( \Exception $ex ) {
-      // ignore
-    }
-
-    try {
-      $affected = $pdoStatement->rowCount();
-    } catch ( \Exception $ex ) {
-      // ignore
-    }
-
-    return $this->result( $rows, $affected );
+    return array_keys( $columns );
 
   }
 
   /**
-   * Create a result.
+   * Return rows mapped to a column, multiple columns or using a function.
    *
-   * @param array $rows
-   * @param int $affected
-   * @return Result
+   * @param array|Fragment|Result $rows Rows
+   * @param int|string|array|function $fn Column, columns or function
+   * @return array
    */
-  function result( $rows = array(), $affected = 0 ) {
-    return new Result( $rows, $affected );
+  function map( $rows, $fn ) {
+
+    if ( is_callable( array( $rows, 'fetchAll' ) ) ) $rows = $rows->fetchAll();
+
+    if ( is_array( $fn ) ) {
+      $columns = $fn;
+      $fn = function ( $row ) use ( $columns ) {
+        $mapped = array();
+        foreach ( $columns as $column ) {
+          $mapped[ $column ] = @$row[ $column ];
+        }
+        return $mapped;
+      };
+    } else if ( !is_callable( $fn ) ) {
+      $column = $fn;
+      $fn = function ( $row ) use ( $column ) {
+        return $row[ $column ];
+      };
+    }
+
+    return array_map( $fn, $rows );
+
   }
+
+  /**
+   * Return rows filtered by column-value equality (non-strict) or function.
+   *
+   * @param array|Fragment|Result $rows Rows
+   * @param int|string|array|function $fn Column, column-value pairs or function
+   * @param mixed $value
+   * @return array
+   */
+  function filter( $rows, $fn, $value = null ) {
+
+    if ( is_callable( array( $rows, 'fetchAll' ) ) ) $rows = $rows->fetchAll();
+
+    if ( is_array( $fn ) ) {
+      $columns = $fn;
+      $fn = function ( $row ) use ( $columns ) {
+        foreach ( $columns as $column => $value ) {
+          if ( @$row[ $column ] != $value ) return false;
+        }
+        return true;
+      };
+    } else if ( !is_callable( $fn ) ) {
+      $column = $fn;
+      $fn = function ( $row ) use ( $column, $value ) {
+        return @$row[ $column ] == $value;
+      };
+    }
+
+    return array_values( array_filter( $rows, $fn ) );
+
+  }
+
+  //
 
   /**
    * Called before executing a statement.
    *
-   * If a value is returned, execution is skipped and the value is returned
-   * instead. The default implementation does nothing.
+   * The default implementation does nothing.
    *
    * @param Fragment $statement
-   * @return mixed
    */
   function beforeExec( $statement ) {
 
@@ -665,6 +685,6 @@ class Connection {
   protected $identDelimiter;
 
   /** @var string */
-  const NOOP = 'SELECT 1 WHERE 0=1';
+  const EMPTY_STATEMENT = 'SELECT 1 WHERE 0=1';
 
 }
