@@ -283,7 +283,7 @@ class ConnectionTest extends BaseTest {
       array( 'test' => 1 ),
       array( 'test' => 2 ),
       array( 'test' => 3 )
-    ), $conn->query( 'dummy' )->select( 'test' )->jsonSerialize() );
+    ), $conn->query( 'dummy' )->select( 'test' )->fetchAll() );
 
   }
 
@@ -311,7 +311,7 @@ class ConnectionTest extends BaseTest {
       array( 'test' => 1 ),
       array( 'test' => 0 ),
       array( 'test' => 3 )
-    ), $conn->query( 'dummy' )->select( 'test' )->jsonSerialize() );
+    ), $conn->query( 'dummy' )->select( 'test' )->fetchAll() );
 
   }
 
