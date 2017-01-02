@@ -27,7 +27,6 @@ class Connection {
 
   /**
    * Returns a basic SELECT query for table $name.
-   * If $id is given, return the row with that id.
    *
    * @param string $name
    * @return Fragment

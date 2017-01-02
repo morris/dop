@@ -1,6 +1,6 @@
 # Changelog
 
-## master
+## v0.2.0
 
 - Revised API with breaking changes
 
