@@ -22,11 +22,12 @@
   },
 
   "require-dev": {
-    "codeclimate/php-test-reporter": "^0.3",
-    "phpunit/phpunit": "^4.8"
+    "phpunit/phpunit": "^8",
+    "friendsofphp/php-cs-fixer": "^2.14"
   },
 
   "scripts": {
+    "format": "php vendor/friendsofphp/php-cs-fixer/php-cs-fixer --config=.php_cs.dist fix src tests",
     "api": "php api.php > API.md",
     "test": "vendor/bin/phpunit",
     "cover": "vendor/bin/phpunit --coverage-html coverage"

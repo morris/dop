@@ -5,6 +5,6 @@ namespace Dop;
 /**
  * Dop exception
  */
-class Exception extends \Exception {
-
+class Exception extends \Exception
+{
 }
