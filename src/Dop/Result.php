@@ -53,12 +53,16 @@ class Result implements \Iterator
      * @param int $orientation One of the PDO::FETCH_ORI_* constants
      * @return array|null
      */
-    public function fetch($offset = 0, $orientation = \PDO::FETCH_ORI_NEXT)
+    public function fetch($offset = 0, $orientation = null)
     {
         if (!$this->pdoStatement()) {
             return null;
         }
-        $row = $this->pdoStatement()->fetch(\PDO::FETCH_ASSOC, $orientation, $offset);
+        $row = $this->pdoStatement()->fetch(
+            \PDO::FETCH_ASSOC,
+            isset($orientation) ? $orientation : \PDO::FETCH_ORI_NEXT,
+            $offset
+        );
         return $row ? $row : null;
     }
 

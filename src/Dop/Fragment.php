@@ -306,39 +306,39 @@ class Fragment implements \IteratorAggregate
         $key = substr($string, 1);
 
         switch ($type) {
-    case 1:
-      if (array_key_exists($this->resolveOffset, $this->params)) {
-          $replacement = $conn->value($this->params[$this->resolveOffset]);
-      } else {
-          throw new Exception('Unresolved parameter ' . $this->resolveOffset);
-      }
-      ++$this->resolveOffset;
-      break;
+            case 1:
+                if (array_key_exists($this->resolveOffset, $this->params)) {
+                    $replacement = $conn->value($this->params[$this->resolveOffset]);
+                } else {
+                    throw new Exception('Unresolved parameter ' . $this->resolveOffset);
+                }
+                ++$this->resolveOffset;
+                break;
 
-    case 2:
-      if (array_key_exists($this->resolveOffset, $this->params)) {
-          $this->resolveParams[] = $this->params[$this->resolveOffset];
-      } else {
-          $this->resolveParams[] = null;
-      }
-      ++$this->resolveOffset;
-      break;
+            case 2:
+                if (array_key_exists($this->resolveOffset, $this->params)) {
+                    $this->resolveParams[] = $this->params[$this->resolveOffset];
+                } else {
+                    $this->resolveParams[] = null;
+                }
+                ++$this->resolveOffset;
+                break;
 
-    case 3:
-      $key = substr($key, 1);
-      if (array_key_exists($key, $this->params)) {
-          $replacement = $conn->value($this->params[$key]);
-      } else {
-          throw new Exception('Unresolved parameter ' . $key);
-      }
-      break;
+            case 3:
+                $key = substr($key, 1);
+                if (array_key_exists($key, $this->params)) {
+                    $replacement = $conn->value($this->params[$key]);
+                } else {
+                    throw new Exception('Unresolved parameter ' . $key);
+                }
+                break;
 
-    case 4:
-      if (array_key_exists($key, $this->params)) {
-          $this->resolveParams[$key] = $this->params[$key];
-      }
-      break;
-    }
+            case 4:
+                if (array_key_exists($key, $this->params)) {
+                    $this->resolveParams[$key] = $this->params[$key];
+                }
+                break;
+        }
 
         // handle fragment insertion
         if ($replacement instanceof Fragment) {
