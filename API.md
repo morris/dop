@@ -19,15 +19,7 @@ class Connection
      * @param \PDO $pdo
      * @param array $options
      */
-    public function __construct(\PDO $pdo, $options = array())
-    {
-        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $this->pdo = $pdo;
-
-        $defaultIdentDelimiter = $this->driver() === 'mysql' ? '`' : '"';
-        $this->identDelimiter = isset($options['identDelimiter']) ?
-            $options['identDelimiter'] : $defaultIdentDelimiter;
-    }
+    public function __construct(\PDO $pdo, $options = array());
 
     /**
      * Returns a basic SELECT query for table $name.
@@ -35,16 +27,7 @@ class Connection
      * @param string $name
      * @return Fragment
      */
-    public function query($table)
-    {
-        return $this('SELECT ::select FROM ::table WHERE ::where ::orderBy ::limit', array(
-            'select' => $this('*'),
-            'table' => $this->table($table),
-            'where' => $this->where(),
-            'orderBy' => $this(),
-            'limit' => $this()
-        ));
-    }
+    public function query($table);
 
     /**
      * Build an insert statement to insert a single row.
@@ -53,10 +36,7 @@ class Connection
      * @param array|\Traversable $row
      * @return Fragment
      */
-    public function insert($table, $row)
-    {
-        return $this->insertBatch($table, array($row));
-    }
+    public function insert($table, $row);
 
     /**
      * Build single batch statement to insert multiple rows.
@@ -68,33 +48,7 @@ class Connection
      * @param array|\Traversable $rows
      * @return Fragment
      */
-    public function insertBatch($table, $rows)
-    {
-        if ($this->empt($rows)) {
-            return $this(self::EMPTY_STATEMENT);
-        }
-        $columns = $this->columns($rows);
-
-        $lists = array();
-
-        foreach ($rows as $row) {
-            $values = array();
-            foreach ($columns as $column) {
-                if (array_key_exists($column, $row)) {
-                    $values[] = $this->value($row[$column]);
-                } else {
-                    $values[] = 'DEFAULT';
-                }
-            }
-            $lists[] = $this->raw("(" . implode(", ", $values) . ")");
-        }
-
-        return $this('INSERT INTO ::table (::columns) VALUES ::values', array(
-            'table' => $this->table($table),
-            'columns' => $this->ident($columns),
-            'values' => $lists
-        ));
-    }
+    public function insertBatch($table, $rows);
 
     /**
      * Insert multiple rows using a prepared statement (directly executed).
@@ -106,28 +60,7 @@ class Connection
      * @param array|\Traversable $rows
      * @return Result The prepared result
      */
-    public function insertPrepared($table, $rows)
-    {
-        if ($this->empt($rows)) {
-            return $this(self::EMPTY_STATEMENT)->prepare();
-        }
-        $columns = $this->columns($rows);
-
-        $prepared = $this('INSERT INTO ::table (::columns) VALUES ::values', array(
-            'table' => $this->table($table),
-            'columns' => $this->ident($columns),
-            'values' => $this('(?' . str_repeat(', ?', count($columns) - 1) . ')')
-    ))->prepare();
-
-        foreach ($rows as $row) {
-            $values = array();
-
-            foreach ($columns as $column) {
-                $values[] = (string) $this->format(@$row[$column]);
-            }
-            $prepared->exec($values);
-        }
-    }
+    public function insertPrepared($table, $rows);
 
     /**
      * Build an update statement.
@@ -140,19 +73,7 @@ class Connection
      * @param array|mixed $params
      * @return Fragment
      */
-    public function update($table, $data, $where = array(), $params = array())
-    {
-        if ($this->empt($data)) {
-            return $this(self::EMPTY_STATEMENT);
-        }
-
-        return $this('UPDATE ::table SET ::set WHERE ::where ::limit', array(
-            'table' => $this->table($table),
-            'set' => $this->assign($data),
-            'where' => $this->where($where, $params),
-            'limit' => $this()
-    ));
-    }
+    public function update($table, $data, $where = array(), $params = array());
 
     /**
      * Build a delete statement.
@@ -164,14 +85,7 @@ class Connection
      * @param array|mixed $params
      * @return Fragment
      */
-    public function delete($table, $where = array(), $params = array())
-    {
-        return $this('DELETE FROM ::table WHERE ::where ::limit', array(
-            'table' => $this->table($table),
-            'where' => $this->where($where, $params),
-            'limit' => $this()
-    ));
-    }
+    public function delete($table, $where = array(), $params = array());
 
     /**
      * Build a conditional expression fragment.
@@ -181,36 +95,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function where($condition = null, $params = array(), Fragment $before = null)
-    {
-
-    // empty condition evaluates to true
-        if (empty($condition)) {
-            return $before ? $before : $this('1=1');
-        }
-
-        // conditions in key-value array
-        if (is_array($condition)) {
-            $cond = $before;
-            foreach ($condition as $k => $v) {
-                $cond = $this->where($k, $v, $cond);
-            }
-            return $cond;
-        }
-
-        // shortcut for basic "column is (in) value"
-        if (preg_match('/^[a-z0-9_.`"]+$/i', $condition)) {
-            $condition = $this->is($condition, $params);
-        } else {
-            $condition = $this($condition, $params);
-        }
-
-        if ($before && (string) $before !== '1=1') {
-            return $this('(??) AND ??', array($before, $condition));
-        }
-
-        return $condition;
-    }
+    public function where($condition = null, $params = array(), Fragment $before = null);
 
     /**
      * Build a negated conditional expression fragment.
@@ -220,27 +105,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function whereNot($key, $value = array(), Fragment $before = null)
-    {
-
-    // key-value array
-        if (is_array($key)) {
-            $cond = $before;
-            foreach ($key as $k => $v) {
-                $cond = $this->whereNot($k, $v, $cond);
-            }
-            return $cond;
-        }
-
-        // "column is not (in) value"
-        $condition = $this->isNot($key, $value);
-
-        if ($before && (string) $before !== '1=1') {
-            return $this('(??) AND ??', array($before, $condition));
-        }
-
-        return $condition;
-    }
+    public function whereNot($key, $value = array(), Fragment $before = null);
 
     /**
      * Build an ORDER BY fragment.
@@ -250,17 +115,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function orderBy($column, $direction = 'ASC', Fragment $before = null)
-    {
-        if (!preg_match('/^asc|desc$/i', $direction)) {
-            throw new Exception('Invalid ORDER BY direction: ' . $direction);
-        }
-
-        return $this->raw(
-            ($before && (string) $before !== '' ? ($before . ', ') : 'ORDER BY ') .
-            $this->ident($column) . ' ' . $direction
-        );
-    }
+    public function orderBy($column, $direction = 'ASC', Fragment $before = null);
 
     /**
      * Build a LIMIT fragment.
@@ -269,28 +124,7 @@ class Connection
      * @param int $offset
      * @return Fragment
      */
-    public function limit($count = null, $offset = null)
-    {
-        if ($count !== null) {
-            $count = intval($count);
-            if ($count < 1) {
-                throw new Exception('Invalid LIMIT count: ' . $count);
-            }
-
-            if ($offset !== null) {
-                $offset = intval($offset);
-                if ($offset < 0) {
-                    throw new Exception('Invalid LIMIT offset: ' . $offset);
-                }
-
-                return $this->raw('LIMIT ' . $count . ' OFFSET ' . $offset);
-            }
-
-            return $this->raw('LIMIT ' . $count);
-        }
-
-        return $this();
-    }
+    public function limit($count = null, $offset = null);
 
     /**
      * Build an SQL condition expressing that "$column is $value",
@@ -302,62 +136,7 @@ class Connection
      * @param bool $not
      * @return Fragment
      */
-    public function is($column, $value, $not = false)
-    {
-        $bang = $not ? '!' : '';
-        $or = $not ? ' AND ' : ' OR ';
-        $novalue = $not ? '1=1' : '0=1';
-        $not = $not ? ' NOT' : '';
-
-        // always treat value as array
-        if (!is_array($value)) {
-            $value = array($value);
-        }
-
-        // always quote column identifier
-        $column = $this->ident($column);
-
-        if (count($value) === 1) {
-
-      // use single column comparison if count is 1
-
-            $value = $value[0];
-
-            if ($value === null) {
-                return $this->raw($column . ' IS' . $not . ' NULL');
-            } else {
-                return $this->raw($column . ' ' . $bang . '= ' . $this->value($value));
-            }
-        } elseif (count($value) > 1) {
-
-      // if we have multiple values, use IN clause
-
-            $values = array();
-            $null = false;
-
-            foreach ($value as $v) {
-                if ($v === null) {
-                    $null = true;
-                } else {
-                    $values[] = $this->value($v);
-                }
-            }
-
-            $clauses = array();
-
-            if (!empty($values)) {
-                $clauses[] = $column . $not . ' IN (' . implode(', ', $values) . ')';
-            }
-
-            if ($null) {
-                $clauses[] = $column . ' IS' . $not . ' NULL';
-            }
-
-            return $this->raw(implode($or, $clauses));
-        }
-
-        return $this->raw($novalue);
-    }
+    public function is($column, $value, $not = false);
 
     /**
      * Build an SQL condition expressing that "$column is not $value"
@@ -368,10 +147,7 @@ class Connection
      * @param mixed|array $value
      * @return Fragment
      */
-    public function isNot($column, $value)
-    {
-        return $this->is($column, $value, true);
-    }
+    public function isNot($column, $value);
 
     /**
      * Build an assignment fragment, e.g. for UPDATE.
@@ -379,16 +155,7 @@ class Connection
      * @param array|\Traversable $data
      * @return Fragment
      */
-    public function assign($data)
-    {
-        $assign = array();
-
-        foreach ($data as $column => $value) {
-            $assign[] = $this->ident($column) . ' = ' . $this->value($value);
-        }
-
-        return $this->raw(implode(', ', $assign));
-    }
+    public function assign($data);
 
     /**
      * Quote a value for SQL.
@@ -396,33 +163,7 @@ class Connection
      * @param mixed $value
      * @return Fragment
      */
-    public function value($value)
-    {
-        if (is_array($value)) {
-            return $this->raw(implode(', ', array_map(array($this, 'value'), $value)));
-        }
-
-        if ($value instanceof Fragment) {
-            return $value;
-        }
-        if ($value === null) {
-            return $this('NULL');
-        }
-
-        $value = $this->format($value);
-
-        if (is_float($value)) {
-            $value = sprintf('%F', $value);
-        }
-        if ($value === false) {
-            $value = '0';
-        }
-        if ($value === true) {
-            $value = '1';
-        }
-
-        return $this->raw($this->pdo()->quote($value));
-    }
+    public function value($value);
 
     /**
      * Format a value for SQL, e.g. DateTime objects.
@@ -430,16 +171,7 @@ class Connection
      * @param mixed $value
      * @return string
      */
-    public function format($value)
-    {
-        if ($value instanceof \DateTime) {
-            $value = clone $value;
-            $value->setTimeZone(new \DateTimeZone('UTC'));
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        return $value;
-    }
+    public function format($value);
 
     /**
      * Quote a table name.
@@ -450,10 +182,7 @@ class Connection
      * @param string $name
      * @return Fragment
      */
-    public function table($name)
-    {
-        return $this->ident($name);
-    }
+    public function table($name);
 
     /**
      * Quote identifier(s).
@@ -461,32 +190,12 @@ class Connection
      * @param mixed $ident Must be 64 or less characters.
      * @return Fragment
      */
-    public function ident($ident)
-    {
-        if (is_array($ident)) {
-            return $this->raw(implode(', ', array_map(array($this, 'ident'), $ident)));
-        }
-
-        if ($ident instanceof Fragment) {
-            return $ident;
-        }
-
-        if (strlen($ident) > 64) {
-            throw new Exception('Identifier is longer than 64 characters');
-        }
-
-        $d = $this->identDelimiter;
-
-        return $this->raw($d . str_replace($d, $d . $d, $ident) . $d);
-    }
+    public function ident($ident);
 
     /**
      * @see Connection::fragment
      */
-    public function __invoke($sql = '', $params = array())
-    {
-        return $this->fragment($sql, $params);
-    }
+    public function __invoke($sql = '', $params = array());
 
     /**
      * Create an SQL fragment, optionally with bound params.
@@ -495,13 +204,7 @@ class Connection
      * @param array $params
      * @return Fragment
      */
-    public function fragment($sql = '', $params = array())
-    {
-        if ($sql instanceof Fragment) {
-            return $sql->bind($params);
-        }
-        return new Fragment($this, $sql, $params);
-    }
+    public function fragment($sql = '', $params = array());
 
     /**
      * Create a raw SQL fragment, optionally with bound params.
@@ -511,10 +214,7 @@ class Connection
      * @param array $params
      * @return Fragment
      */
-    public function raw($sql = '', $params = array())
-    {
-        return $this($sql, $params)->raw();
-    }
+    public function raw($sql = '', $params = array());
 
     //
 
@@ -526,10 +226,7 @@ class Connection
      * @param string|null $sequence
      * @return mixed|null
      */
-    public function lastInsertId($sequence = null)
-    {
-        return $this->pdo()->lastInsertId($sequence);
-    }
+    public function lastInsertId($sequence = null);
 
     //
 
@@ -541,29 +238,7 @@ class Connection
      * @param callable $t The transaction body
      * @return mixed The return value of calling $t
      */
-    public function transaction($t)
-    {
-        if (!is_callable($t)) {
-            throw new Exception('Transaction must be callable');
-        }
-
-        $pdo = $this->pdo();
-
-        if ($pdo->inTransaction()) {
-            return call_user_func($t, $this);
-        }
-
-        $pdo->beginTransaction();
-
-        try {
-            $return = call_user_func($t, $this);
-            $pdo->commit();
-            return $return;
-        } catch (\Exception $ex) {
-            $pdo->rollBack();
-            throw $ex;
-        }
-    }
+    public function transaction($t);
 
     //
 
@@ -573,13 +248,7 @@ class Connection
      * @param array|\Traversable
      * @return bool
      */
-    public function empt($traversable)
-    {
-        foreach ($traversable as $_) {
-            return false;
-        }
-        return true;
-    }
+    public function empt($traversable);
 
     /**
      * Get list of all columns used in the given rows.
@@ -587,21 +256,7 @@ class Connection
      * @param array|\Traversable $rows
      * @return array
      */
-    public function columns($rows)
-    {
-        if (!$rows) {
-            return array();
-        }
-        $columns = array();
-
-        foreach ($rows as $row) {
-            foreach ($row as $column => $value) {
-                $columns[$column] = true;
-            }
-        }
-
-        return array_keys($columns);
-    }
+    public function columns($rows);
 
     /**
      * Return rows mapped to a column, multiple columns or using a function.
@@ -610,30 +265,7 @@ class Connection
      * @param int|string|array|function $fn Column, columns or function
      * @return array
      */
-    public function map($rows, $fn)
-    {
-        if (is_callable(array($rows, 'fetchAll'))) {
-            $rows = $rows->fetchAll();
-        }
-
-        if (is_array($fn)) {
-            $columns = $fn;
-            $fn = function ($row) use ($columns) {
-                $mapped = array();
-                foreach ($columns as $column) {
-                    $mapped[$column] = @$row[$column];
-                }
-                return $mapped;
-            };
-        } elseif (!is_callable($fn)) {
-            $column = $fn;
-            $fn = function ($row) use ($column) {
-                return $row[$column];
-            };
-        }
-
-        return array_map($fn, $rows);
-    }
+    public function map($rows, $fn);
 
     /**
      * Return rows filtered by column-value equality (non-strict) or function.
@@ -643,31 +275,7 @@ class Connection
      * @param mixed $value
      * @return array
      */
-    public function filter($rows, $fn, $value = null)
-    {
-        if (is_callable(array($rows, 'fetchAll'))) {
-            $rows = $rows->fetchAll();
-        }
-
-        if (is_array($fn)) {
-            $columns = $fn;
-            $fn = function ($row) use ($columns) {
-                foreach ($columns as $column => $value) {
-                    if (@$row[$column] != $value) {
-                        return false;
-                    }
-                }
-                return true;
-            };
-        } elseif (!is_callable($fn)) {
-            $column = $fn;
-            $fn = function ($row) use ($column, $value) {
-                return @$row[$column] == $value;
-            };
-        }
-
-        return array_values(array_filter($rows, $fn));
-    }
+    public function filter($rows, $fn, $value = null);
 
     //
 
@@ -678,9 +286,7 @@ class Connection
      *
      * @param Fragment $statement
      */
-    public function beforeExec($statement)
-    {
-    }
+    public function beforeExec($statement);
 
     //
 
@@ -689,20 +295,14 @@ class Connection
      *
      * @return string
      */
-    public function driver()
-    {
-        return $this->pdo()->getAttribute(\PDO::ATTR_DRIVER_NAME);
-    }
+    public function driver();
 
     /**
      * Return wrapped PDO.
      *
      * @return \PDO
      */
-    public function pdo()
-    {
-        return $this->pdo;
-    }
+    public function pdo();
 
     //
 
@@ -726,12 +326,7 @@ class Fragment implements \IteratorAggregate
    * @param string $sql
    * @param array $params
    */
-    public function __construct($conn, $sql = '', $params = array())
-    {
-        $this->conn = $conn;
-        $this->sql = $sql;
-        $this->params = $params;
-    }
+    public function __construct($conn, $sql = '', $params = array());
 
     /**
      * Return a new fragment with the given parameter(s).
@@ -740,28 +335,12 @@ class Fragment implements \IteratorAggregate
      * @param mixed $value If $params is a parameter name, bind to this value
      * @return Fragment
      */
-    public function bind($params, $value = null)
-    {
-        if (empty($params) && $params !== 0) {
-            return $this;
-        }
-        if (!is_array($params)) {
-            return $this->bind(array($params => $value));
-        }
-        $clone = clone $this;
-        foreach ($params as $key => $value) {
-            $clone->params[$key] = $value;
-        }
-        return $clone;
-    }
+    public function bind($params, $value = null);
 
     /**
      * @see Fragment::exec
      */
-    public function __invoke($params = null)
-    {
-        return $this->exec($params);
-    }
+    public function __invoke($params = null);
 
     /**
      * Execute statement and return result.
@@ -769,10 +348,7 @@ class Fragment implements \IteratorAggregate
      * @param array $params
      * @return Result The prepared and executed result
      */
-    public function exec($params = array())
-    {
-        return $this->prepare($params)->exec();
-    }
+    public function exec($params = array());
 
     /**
      * Return prepared statement from this fragment.
@@ -780,10 +356,7 @@ class Fragment implements \IteratorAggregate
      * @param array $params
      * @return Result The prepared result
      */
-    public function prepare($params = array())
-    {
-        return new Result($this->bind($params));
-    }
+    public function prepare($params = array());
 
     //
 
@@ -793,20 +366,14 @@ class Fragment implements \IteratorAggregate
      * @param int $offset Offset to skip
      * @return array|null
      */
-    public function fetch($offset = 0)
-    {
-        return $this->exec()->fetch($offset);
-    }
+    public function fetch($offset = 0);
 
     /**
      * Execute, fetch and return all rows.
      *
      * @return array
      */
-    public function fetchAll()
-    {
-        return $this->exec()->fetchAll();
-    }
+    public function fetchAll();
 
     //
 
@@ -816,21 +383,7 @@ class Fragment implements \IteratorAggregate
      * @param string|Fragment $expr
      * @return Fragment
      */
-    public function select($expr)
-    {
-        $before = (string) @$this->params['select'];
-        if (!$before || (string) $before === '*') {
-            $before = '';
-        } else {
-            $before .= ', ';
-        }
-
-        return $this->bind(array(
-            'select' => $this->conn->raw(
-                $before . $this->conn->ident(func_get_args())
-            )
-        ));
-    }
+    public function select($expr);
 
     /**
      * Return new fragment with additional WHERE condition
@@ -840,12 +393,7 @@ class Fragment implements \IteratorAggregate
      * @param mixed|array $params
      * @return Fragment
      */
-    public function where($condition, $params = array())
-    {
-        return $this->bind(array(
-            'where' => $this->conn->where($condition, $params, @$this->params['where'])
-        ));
-    }
+    public function where($condition, $params = array());
 
     /**
      * Return new fragment with additional "$column is not $value" condition
@@ -855,12 +403,7 @@ class Fragment implements \IteratorAggregate
      * @param mixed $value
      * @return Fragment
      */
-    public function whereNot($key, $value = null)
-    {
-        return $this->bind(array(
-            'where' => $this->conn->whereNot($key, $value, @$this->params['where'])
-        ));
-    }
+    public function whereNot($key, $value = null);
 
     /**
      * Return new fragment with additional ORDER BY column and direction.
@@ -869,12 +412,7 @@ class Fragment implements \IteratorAggregate
      * @param string $direction
      * @return Fragment
      */
-    public function orderBy($column, $direction = "ASC")
-    {
-        return $this->bind(array(
-            'orderBy' => $this->conn->orderBy($column, $direction, @$this->params['orderBy'])
-        ));
-    }
+    public function orderBy($column, $direction = "ASC");
 
     /**
      * Return new fragment with result limit and optionally an offset.
@@ -883,12 +421,7 @@ class Fragment implements \IteratorAggregate
      * @param int|null $offset
      * @return Fragment
      */
-    public function limit($count = null, $offset = null)
-    {
-        return $this->bind(array(
-            'limit' => $this->conn->limit($count, $offset)
-        ));
-    }
+    public function limit($count = null, $offset = null);
 
     /**
      * Return new fragment with paged limit.
@@ -899,54 +432,35 @@ class Fragment implements \IteratorAggregate
      * @param int $page
      * @return Fragment
      */
-    public function paged($pageSize, $page)
-    {
-        return $this->limit($pageSize, ($page - 1) * $pageSize);
-    }
+    public function paged($pageSize, $page);
 
     /**
      * Get connection.
      *
      * @return Connection
      */
-    public function conn()
-    {
-        return $this->conn;
-    }
+    public function conn();
 
     /**
      * Get resolved SQL string of this fragment.
      *
      * @return string
      */
-    public function toString()
-    {
-        return $this->resolve()->sql;
-    }
+    public function toString();
 
     /**
      * Get bound parameters.
      *
      * @return array
      */
-    public function params()
-    {
-        return $this->params;
-    }
+    public function params();
 
     //
 
     /**
      * @see Fragment::toString
      */
-    public function __toString()
-    {
-        try {
-            return $this->toString();
-        } catch (\Exception $ex) {
-            return $ex->getMessage();
-        }
-    }
+    public function __toString();
 
     //
 
@@ -955,10 +469,7 @@ class Fragment implements \IteratorAggregate
      *
      * @return \Iterator
      */
-    public function getIterator()
-    {
-        return $this->exec();
-    }
+    public function getIterator();
 
     //
 
@@ -967,99 +478,7 @@ class Fragment implements \IteratorAggregate
      *
      * @return Fragment
      */
-    public function resolve()
-    {
-        if ($this->resolved) {
-            return $this->resolved;
-        }
-
-        static $rx;
-
-        if (!isset($rx)) {
-            $rx = '(' . implode('|', array(
-                '(\?\?)',                       // 1 double question mark
-                '(\?)',                         // 2 question mark
-                '(::[a-zA-Z_$][a-zA-Z0-9_$]*)', // 3 double colon marker
-                '(:[a-zA-Z_$][a-zA-Z0-9_$]*)'   // 4 colon marker
-            )) . ')s';
-        }
-
-        $this->resolveParams = array();
-        $this->resolveOffset = 0;
-
-        $resolved = preg_replace_callback($rx, array($this, 'resolveCallback'), $this->sql);
-
-        $this->resolved = $this->conn->fragment($resolved, $this->resolveParams);
-        $this->resolved->resolved = $this->resolved;
-
-        $this->resolveParams = $this->resolveOffset = null;
-
-        return $this->resolved;
-    }
-
-        $type = 1;
-        while (!($string = $match[$type])) {
-            ++$type;
-        }
-
-        $replacement = $string;
-        $key = substr($string, 1);
-
-        switch ($type) {
-            case 1:
-                if (array_key_exists($this->resolveOffset, $this->params)) {
-                    $replacement = $conn->value($this->params[$this->resolveOffset]);
-                } else {
-                    throw new Exception('Unresolved parameter ' . $this->resolveOffset);
-                }
-                ++$this->resolveOffset;
-                break;
-
-            case 2:
-                if (array_key_exists($this->resolveOffset, $this->params)) {
-                    $this->resolveParams[] = $this->params[$this->resolveOffset];
-                } else {
-                    $this->resolveParams[] = null;
-                }
-                ++$this->resolveOffset;
-                break;
-
-            case 3:
-                $key = substr($key, 1);
-                if (array_key_exists($key, $this->params)) {
-                    $replacement = $conn->value($this->params[$key]);
-                } else {
-                    throw new Exception('Unresolved parameter ' . $key);
-                }
-                break;
-
-            case 4:
-                if (array_key_exists($key, $this->params)) {
-                    $this->resolveParams[$key] = $this->params[$key];
-                }
-                break;
-        }
-
-        // handle fragment insertion
-        if ($replacement instanceof Fragment) {
-            $replacement = $replacement->resolve();
-
-            // merge fragment parameters
-            // numbered params are appended
-            // named params are merged only if the param does not exist yet
-            foreach ($replacement->params() as $key => $value) {
-                if (is_int($key)) {
-                    $this->resolveParams[] = $value;
-                } elseif (!array_key_exists($key, $this->params)) {
-                    $this->resolveParams[$key] = $value;
-                }
-            }
-
-            $replacement = $replacement->toString();
-        }
-
-        return $replacement;
-    }
+    public function resolve();
 
     /**
      * Create a raw SQL fragment copy of this fragment.
@@ -1067,24 +486,12 @@ class Fragment implements \IteratorAggregate
      *
      * @return Fragment
      */
-    public function raw()
-    {
-        $clone = clone $this;
-        $clone->resolved = $clone;
-        return $clone;
-    }
+    public function raw();
 
     /**
      * @ignore
      */
-    public function __clone()
-    {
-        if ($this->resolved && $this->resolved->sql === $this->sql) {
-            $this->resolved = $this;
-        } else {
-            $this->resolved = null;
-        }
-    }
+    public function __clone();
 
 }
 
@@ -1104,14 +511,7 @@ class Result implements \Iterator
    *
    * @param Fragment $statement
    */
-    public function __construct($statement)
-    {
-        $this->statement = $statement->resolve();
-        $conn = $statement->conn();
-        if ($statement->toString() !== $conn::EMPTY_STATEMENT) {
-            $this->pdoStatement = $conn->pdo()->prepare($statement->toString());
-        }
-    }
+    public function __construct($statement);
 
     /**
      * Execute the prepared statement (again).
@@ -1119,18 +519,7 @@ class Result implements \Iterator
      * @param array $params
      * @return $this
      */
-    public function exec($params = array())
-    {
-        if (!$this->pdoStatement()) {
-            return $this;
-        }
-
-        $statement = $this->statement->bind($params);
-        $statement->conn()->beforeExec($statement);
-        $this->pdoStatement()->execute($statement->params());
-
-        return $this;
-    }
+    public function exec($params = array());
 
     /**
      * Fetch next row.
@@ -1139,109 +528,60 @@ class Result implements \Iterator
      * @param int $orientation One of the PDO::FETCH_ORI_* constants
      * @return array|null
      */
-    public function fetch($offset = 0, $orientation = null)
-    {
-        if (!$this->pdoStatement()) {
-            return null;
-        }
-        $row = $this->pdoStatement()->fetch(
-            \PDO::FETCH_ASSOC,
-            isset($orientation) ? $orientation : \PDO::FETCH_ORI_NEXT,
-            $offset
-        );
-        return $row ? $row : null;
-    }
+    public function fetch($offset = 0, $orientation = null);
 
     /**
      * Fetch all rows.
      *
      * @return array
      */
-    public function fetchAll()
-    {
-        if (!$this->pdoStatement()) {
-            return array();
-        }
-        return $this->pdoStatement()->fetchAll(\PDO::FETCH_ASSOC);
-    }
+    public function fetchAll();
 
     /**
      * Close the cursor in this result, if any.
      *
      * @return $this
      */
-    public function close()
-    {
-        if ($this->pdoStatement()) {
-            $this->pdoStatement()->closeCursor();
-        }
-        return $this;
-    }
+    public function close();
 
     /**
      * Return number of affected rows.
      *
      * @return int
      */
-    public function affected()
-    {
-        if ($this->pdoStatement()) {
-            return $this->pdoStatement()->rowCount();
-        }
-        return 0;
-    }
+    public function affected();
 
     /**
      * @return \PDOStatement
      */
-    public function pdoStatement()
-    {
-        return $this->pdoStatement;
-    }
+    public function pdoStatement();
 
     //
 
     /**
      * @internal
      */
-    public function current()
-    {
-        return $this->current;
-    }
+    public function current();
 
     /**
      * @internal
      */
-    public function key()
-    {
-        return $this->key;
-    }
+    public function key();
 
     /**
      * @internal
      */
-    public function next()
-    {
-        $this->current = $this->fetch();
-        ++$this->key;
-    }
+    public function next();
 
     /**
      * @internal
      */
-    public function rewind()
-    {
-        $this->current = $this->fetch();
-        $this->key = 0;
-    }
+    public function rewind();
 
     /**
      * @internal
      */
-    public function valid()
-    {
-        return $this->current;
-    }
+    public function valid();
 
 }
 

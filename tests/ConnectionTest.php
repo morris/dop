@@ -556,13 +556,15 @@ class ConnectionTest extends BaseTest
         $conn->query('post')->limit(1, -1)->exec();
     }
 
-    public function testFragmentFragment() {
+    public function testFragmentFragment()
+    {
         $conn = $this->conn;
 
         $this->assertEquals('select 0=\'1\'', $this->str($conn($conn('select 0=??'), array(1))));
     }
 
-    public function testColumns() {
+    public function testColumns()
+    {
         $this->assertEquals(array(), $this->conn->columns(null));
     }
 }

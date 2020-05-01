@@ -12,7 +12,7 @@ echo "```\n";
 function api( $file ) {
   $output = file_get_contents( $file );
   $output = preg_replace( "(<\?php\s+namespace\s+.*?\s*;\s*)s", "\n", $output );
-  $output = preg_replace( "(\)\s*{.*?\n  }\n)s", ");\n", $output );
+  $output = preg_replace( "(\)\s*{.*?\n    }\n)s", ");\n", $output );
   while ( $i = strpos( $output, 'protected' ) ) {
     $j = strrpos( $output, '/*', $i - strlen( $output ) );
     $k = strpos( $output, ';', $i );
