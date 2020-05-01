@@ -106,11 +106,13 @@ class ConnectionTest extends BaseTest
             $conn->ident('foo'),
             $conn->ident('foo.bar'),
             $conn->ident('foo' . $d . '.bar'),
+            $conn->ident($conn->ident('foo' . $d . '.bar')),
         ));
 
         $ex = array(
             '`foo`',
             '`foo.bar`',
+            '`foo``.bar`',
             '`foo``.bar`'
         );
 
@@ -241,6 +243,7 @@ class ConnectionTest extends BaseTest
                 array('test' => 2),
                 array('test' => 3)
             ));
+            $conn->insertPrepared('dummy', array());
             $test->assertTrue(intval($conn->lastInsertId('dummy_id_seq')) > 0);
         });
 
@@ -531,5 +534,35 @@ class ConnectionTest extends BaseTest
         $this->assertTrue(isset($notFirst[0]));
         $this->assertTrue(isset($notFirst[1]));
         $this->assertFalse(isset($notFirst[3]));
+    }
+
+    public function testInvalidLimitCount()
+    {
+        $conn = $this->conn;
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid LIMIT count: -1');
+
+        $conn->query('post')->limit(-1)->exec();
+    }
+
+    public function testInvalidLimitOffset()
+    {
+        $conn = $this->conn;
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid LIMIT offset: -1');
+
+        $conn->query('post')->limit(1, -1)->exec();
+    }
+
+    public function testFragmentFragment() {
+        $conn = $this->conn;
+
+        $this->assertEquals('select 0=\'1\'', $this->str($conn($conn('select 0=??'), array(1))));
+    }
+
+    public function testColumns() {
+        $this->assertEquals(array(), $this->conn->columns(null));
     }
 }

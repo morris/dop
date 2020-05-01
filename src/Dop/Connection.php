@@ -271,13 +271,13 @@ class Connection
         if ($count !== null) {
             $count = intval($count);
             if ($count < 1) {
-                throw new Exception('Invalid LIMIT count: ' + $count);
+                throw new Exception('Invalid LIMIT count: ' . $count);
             }
 
             if ($offset !== null) {
                 $offset = intval($offset);
                 if ($offset < 0) {
-                    throw new Exception('Invalid LIMIT offset: ' + $offset);
+                    throw new Exception('Invalid LIMIT offset: ' . $offset);
                 }
 
                 return $this->raw('LIMIT ' . $count . ' OFFSET ' . $offset);
@@ -292,7 +292,7 @@ class Connection
     /**
      * Build an SQL condition expressing that "$column is $value",
      * or "$column is in $value" if $value is an array. Handles null
-     * and fragments like $conn("NOW()") correctly.
+     * and fragments like $dop("NOW()") correctly.
      *
      * @param string $column
      * @param mixed|array $value
@@ -359,7 +359,7 @@ class Connection
     /**
      * Build an SQL condition expressing that "$column is not $value"
      * or "$column is not in $value" if $value is an array. Handles null
-     * and fragments like $conn("NOW()") correctly.
+     * and fragments like $dop("NOW()") correctly.
      *
      * @param string $column
      * @param mixed|array $value

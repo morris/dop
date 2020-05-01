@@ -11,6 +11,14 @@ class ResultTest extends BaseTest
         $this->assertEquals(array( 'id' => '13' ), $posts->fetch());
         $this->assertEquals(null, $posts->fetch());
         $this->assertEquals(null, $posts->fetch());
+        $this->assertEquals(
+            null,
+            $conn->insertBatch('post', array())->exec()->fetch()
+        );
+        $this->assertEquals(
+            array(),
+            $conn->insertBatch('post', array())->exec()->fetchAll()
+        );
     }
 
     public function testClose()
