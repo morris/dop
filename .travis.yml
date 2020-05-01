@@ -29,8 +29,4 @@ script:
   - vendor/bin/phpunit --bootstrap=tests/$BOOTSTRAP.php --coverage-clover=build/logs/clover.xml tests
 
 after_script:
-  - vendor/bin/test-reporter
-
-addons:
-  code_climate:
-    repo_token: 7a569e0aea4669fb8d4e581314bb1f934116f6bc8db7e4f0bdc777f0016a46d4
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
