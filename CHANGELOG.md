@@ -1,8 +1,12 @@
 # Changelog
 
-## v0.2.1
+## 0.3.1
 
 - Fixed bug in invalid limit/offset exception messages
+
+## v0.3.0
+
+- Fixed default param in `Result::fetch`
 
 ## v0.2.0
 
