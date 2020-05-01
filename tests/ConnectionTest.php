@@ -11,10 +11,17 @@ class ConnectionTest extends BaseTest
     public function testTransaction()
     {
         $conn = $this->conn;
-        $conn->transaction(function () {
+        $i = 0;
+
+        $conn->transaction(function () use (&$i) {
+            ++$i;
         });
-        $conn->transaction(function () {
+
+        $conn->transaction(function () use (&$i) {
+            ++$i;
         });
+
+        $this->assertEquals($i, 2);
     }
 
     public function testTransactionCallable()
@@ -119,14 +126,17 @@ class ConnectionTest extends BaseTest
         $conn->ident(str_repeat('x', 65));
     }
 
-    public function testTransactions()
+    public function testNestedTransactions()
     {
         $conn = $this->conn;
 
-        $conn->transaction(function ($conn) {
-            $conn->transaction(function ($conn) {
+        $conn->transaction(function ($conn) use (&$i) {
+            $conn->transaction(function ($conn) use (&$i) {
+                ++$i;
             });
         });
+
+        $this->assertEquals($i, 1);
     }
 
     public function testIs()
@@ -398,30 +408,51 @@ class ConnectionTest extends BaseTest
             'select * from categorization where post_id in (::posts)',
             array('posts' => $posts)
         )->exec();
+
+        $this->assertEquals($dop->map($cats, function ($row) {
+            return $row['category_id'];
+        }), array('22', '23', '21', '21'));
     }
 
     public function testInjection()
     {
-        $dop = $this->conn;
+        $conn = $this->conn;
 
-        $dop->insert('dummy', array(
+        $conn->insert('dummy', array(
             'name' => 'hello?'
         ))->exec();
 
-        $dop->update('dummy', array(
+        $conn->update('dummy', array(
             'name' => 'hello? ::world'
         ))->exec();
 
-        $dop->query('dummy')
-            ->where('name', 'hello?')
-            ->where('name', '::world')
-            ->exec();
+        $this->assertEquals(
+            $conn->query('dummy')
+                ->where('name', 'hello? ::world')
+                ->fetch(),
+            array(
+                'id' => 1,
+                'test' => null,
+                'name' => 'hello? ::world'
+            )
+        );
 
-        $dop('::insert', array(
-            'insert' => $dop->insert('dummy', array(
+        $conn('::insert', array(
+            'insert' => $conn->insert('dummy', array(
                 'name' => 'hello?'
             ))
         ))->exec();
+
+        $this->assertEquals(
+            $conn->query('dummy')
+                ->where('name', 'hello?')
+                ->fetch(),
+            array(
+                'id' => 2,
+                'test' => null,
+                'name' => 'hello?'
+            )
+        );
     }
 
     public function testMap()

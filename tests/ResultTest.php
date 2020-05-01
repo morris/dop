@@ -20,6 +20,8 @@ class ResultTest extends BaseTest
         $posts->fetch();
         $posts->close();
         $posts->close();
+
+        $this->assertTrue(true);
     }
 
     public function testAffected()
