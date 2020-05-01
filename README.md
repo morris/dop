@@ -5,8 +5,10 @@
 
 Dop is an immutable API on top of [PDO](http://php.net/manual/en/book.pdo.php)
 to compose and execute SQL statements.
-Its extended parameters allow arbitrary values like arrays and SQL fragments.
 
+- Extended parameters (`::param` and `??`) allow binding to arbitrary values like arrays, `null` and SQL fragments.
+- Provides helpers for writing common queries.
+- Tested with **SQLite, PostgreSQL, and MySQL.**
 
 ## Usage
 
@@ -30,12 +32,9 @@ $posts = $dop('SELECT * FROM post WHERE (::catCount) >= 3',
     ['catCount' => $catCount])->fetchAll();
 ```
 
-__See [API.md](API.md) for a complete API reference.__
-
-
 ## Parameters
 
-Dop introduces additional parameter markers written as `::name` or `??`.
+Dop introduces additional parameter markers written as `::param` or `??`.
 They allow arbitrary values like arrays, `null`, and other SQL fragments,
 and enable powerful composition:
 
@@ -54,7 +53,6 @@ Internally, these parameters are resolved before statement preparation.
 Note that due to the current implementation using regular expressions,
 you should *never* use quoted strings directly. Always use bound parameters.
 
-
 ## Installation
 
 Dop requires PHP >= 5.3.0 and PDO.
@@ -63,3 +61,7 @@ Install via [composer](https://getcomposer.org/):
 ```
 $ composer require morris/dop
 ```
+
+## Reference
+
+See [API.md](API.md) for a complete API reference.
