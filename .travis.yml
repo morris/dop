@@ -7,15 +7,23 @@ services:
   - postgresql
 
 env:
-  - BOOTSTRAP=sqlite
-  - BOOTSTRAP=mysql
-  - BOOTSTRAP=postgresql
+  global:
+    - CC_TEST_REPORTER_ID=7a569e0aea4669fb8d4e581314bb1f934116f6bc8db7e4f0bdc777f0016a46d4
+  matrix:
+    - BOOTSTRAP=sqlite
+    - BOOTSTRAP=mysql
+    - BOOTSTRAP=postgresql
+
+before_install:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
 
 before_script:
   - composer self-update
   - composer install --prefer-dist
   - mysql -e 'create database test;'
   - psql -c 'create database test;' -U postgres
+  - ./cc-test-reporter before-build
 
 script:
   - vendor/bin/phpunit --bootstrap=tests/$BOOTSTRAP.php --coverage-clover=build/logs/clover.xml tests
