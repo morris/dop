@@ -11,8 +11,8 @@
     }
   ],
   "autoload": {
-    "psr-4": {
-      "Dop\\": "src"
+    "psr-0": {
+      "Dop\\": "src/Dop"
     }
   },
   "require": {
