@@ -12,7 +12,6 @@ namespace Dop;
  */
 class Connection
 {
-
     /**
      * Constructor
      *
@@ -318,14 +317,13 @@ class Connection
  */
 class Fragment implements \IteratorAggregate
 {
-
-  /**
-   * Constructor
-   *
-   * @param Connection $conn
-   * @param string $sql
-   * @param array $params
-   */
+    /**
+     * Constructor
+     *
+     * @param Connection $conn
+     * @param string $sql
+     * @param array $params
+     */
     public function __construct($conn, $sql = '', $params = array());
 
     /**
@@ -505,12 +503,11 @@ class Fragment implements \IteratorAggregate
  */
 class Result implements \Iterator
 {
-
-  /**
-   * Constructor
-   *
-   * @param Fragment $statement
-   */
+    /**
+     * Constructor
+     *
+     * @param Fragment $statement
+     */
     public function __construct($statement);
 
     /**

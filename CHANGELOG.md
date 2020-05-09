@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- PSR-4
+
 ## 0.3.1
 
 - Fixed bug in invalid limit/offset exception messages

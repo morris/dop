@@ -12,12 +12,11 @@ namespace Dop;
  */
 class Result implements \Iterator
 {
-
-  /**
-   * Constructor
-   *
-   * @param Fragment $statement
-   */
+    /**
+     * Constructor
+     *
+     * @param Fragment $statement
+     */
     public function __construct($statement)
     {
         $this->statement = $statement->resolve();

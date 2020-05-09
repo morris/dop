@@ -10,14 +10,13 @@ namespace Dop;
  */
 class Fragment implements \IteratorAggregate
 {
-
-  /**
-   * Constructor
-   *
-   * @param Connection $conn
-   * @param string $sql
-   * @param array $params
-   */
+    /**
+     * Constructor
+     *
+     * @param Connection $conn
+     * @param string $sql
+     * @param array $params
+     */
     public function __construct($conn, $sql = '', $params = array())
     {
         $this->conn = $conn;
