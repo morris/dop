@@ -3,7 +3,7 @@
 namespace Dop;
 
 /**
- * Dop exception
+ * DOP exception
  */
 class Exception extends \Exception
 {

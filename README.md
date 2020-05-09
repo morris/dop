@@ -1,9 +1,9 @@
-# Dop
+# DOP
 
 [![Build Status](https://travis-ci.org/morris/dop.svg?branch=master)](https://travis-ci.org/morris/dop)
 [![Test Coverage](https://codeclimate.com/github/morris/dop/badges/coverage.svg)](https://codeclimate.com/github/morris/dop/coverage)
 
-Dop is an immutable API on top of [PDO](http://php.net/manual/en/book.pdo.php)
+DOP is an immutable API on top of [PDO](http://php.net/manual/en/book.pdo.php)
 to compose and execute SQL statements.
 
 - Extended parameters (`::param` and `??`) allow binding to arbitrary values like arrays, `null` and SQL fragments.
@@ -12,7 +12,7 @@ to compose and execute SQL statements.
 
 ## Installation
 
-Dop requires PHP >= 5.3.0 and PDO.
+DOP requires PHP >= 5.3.0 and PDO.
 Install via [composer](https://getcomposer.org/):
 
 ```sh
@@ -26,7 +26,7 @@ composer require morris/dop
 $pdo = new PDO('sqlite:blog.sqlite3');
 $dop = new Dop\Connection($pdo);
 
-// Find posts by author IDs using Dop parametrization
+// Find posts by author IDs using DOP parametrization
 $authorIds = [1, 2, 3];
 $orderByTitle = $dop('ORDER BY title ASC');
 $posts = $dop(
@@ -34,10 +34,10 @@ $posts = $dop(
     [$authorIds, $orderByTitle]
 )->fetchAll();
 
-// Find published posts using Dop helpers for common queries
+// Find published posts using DOP helpers for common queries
 $posts = $dop->query('post')->where('is_published = ?', [1])->fetchAll();
 
-// Get categorizations of posts using Dop's map function
+// Get categorizations of posts using DOP's map function
 $categorizations = $dop(
     'SELECT * FROM categorization WHERE post_id IN (??)',
     [$dop->map($posts, 'id')]

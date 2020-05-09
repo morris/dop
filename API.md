@@ -611,7 +611,7 @@ class Result implements \Iterator
 }
 
 /**
- * Dop exception
+ * DOP exception
  */
 class Exception extends \Exception
 {
