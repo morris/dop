@@ -1,7 +1,7 @@
 {
   "name": "morris/dop",
   "description": "An immutable API on top of PDO to compose and execute SQL statements",
-  "keywords": [ "sql", "pdo", "database", "dop" ],
+  "keywords": ["sql", "pdo", "database", "dop"],
   "license": "MIT",
   "homepage": "https://github.com/morris/dop",
   "authors": [

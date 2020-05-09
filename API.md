@@ -285,10 +285,18 @@ class Connection
     //
 
     /**
-     * Called before executing a statement.
+     * Execution callback.
      *
-     * The default implementation does nothing.
+     * Override to log or measure statement execution.
+     * Must call $callback.
      *
+     * @param Fragment $statement
+     * @param function $callback
+     */
+    public function execCallback($statement, $callback);
+
+    /**
+     * @deprecated Override execCallback instead.
      * @param Fragment $statement
      */
     public function beforeExec($statement);
@@ -553,6 +561,20 @@ class Result implements \Iterator
      * @return int
      */
     public function affected();
+
+    /**
+     * Get this result's connection.
+     *
+     * @return Connection
+     */
+    public function conn();
+
+    /**
+     * Get this result's statement.
+     *
+     * @return Fragment
+     */
+    public function statement();
 
     /**
      * @return \PDOStatement
