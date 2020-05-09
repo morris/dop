@@ -13,7 +13,7 @@ class FragmentTest extends BaseTest
         ));
 
         $this->assertEquals(
-            "SELECT * FROM post, `a`, `b` WHERE (`foo` = 'bar') AND `x` IS NULL OR foo=:bar OR x in ('1', '2', '3') :lol",
+            "SELECT * FROM post, `a`, `b` WHERE (`foo` = 'bar') AND (`x` IS NULL) OR foo=:bar OR x in ('1', '2', '3') :lol",
             str_replace('"', '`', (string) $s)
         );
 
@@ -76,18 +76,23 @@ class FragmentTest extends BaseTest
             ->where('test < :a', array('a' => 31))
             ->where('test > :b', array('b' => 0))
             ->fetch();
+        $conn->query('dummy')
+            ->where('test = 1')
+            ->where('test < 0 OR test > 999')
+            ->fetch();
 
         $this->assertEquals(array(
             "SELECT * FROM `dummy` WHERE `test` IS NULL",
             "SELECT * FROM `dummy` WHERE `test` = '31'",
             "SELECT * FROM `dummy` WHERE `test` IN ('1', '2', '3')",
-            "SELECT * FROM `dummy` WHERE (`test` = '31') AND `id` = '1'",
+            "SELECT * FROM `dummy` WHERE (`test` = '31') AND (`id` = '1')",
             "SELECT * FROM `dummy` WHERE test = 31",
             "SELECT * FROM `dummy` WHERE test = ?",
             "SELECT * FROM `dummy` WHERE test = ?",
             "SELECT * FROM `dummy` WHERE test = :param",
-            "SELECT * FROM `dummy` WHERE (test < :a) AND test > :b"
-    ), $this->statements);
+            "SELECT * FROM `dummy` WHERE (test < :a) AND (test > :b)",
+            "SELECT * FROM `dummy` WHERE (test = 1) AND (test < 0 OR test > 999)"
+        ), $this->statements);
 
         $this->assertEquals(array(
             array(),
@@ -98,8 +103,9 @@ class FragmentTest extends BaseTest
             array(31),
             array(32),
             array('param' => 31),
-            array('a' => 31, 'b' => 0)
-    ), $this->params);
+            array('a' => 31, 'b' => 0),
+            array()
+        ), $this->params);
     }
 
     public function testWhereNot()
@@ -192,7 +198,7 @@ class FragmentTest extends BaseTest
             "SELECT `test` FROM `dummy` WHERE 1=1",
             "SELECT `test`, `id` FROM `dummy` WHERE 1=1",
             "SELECT `test`, `id` FROM `dummy` WHERE 1=1"
-    ), $this->statements);
+        ), $this->statements);
     }
 
     public function testFirst()

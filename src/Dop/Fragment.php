@@ -36,13 +36,17 @@ class Fragment implements \IteratorAggregate
         if (empty($params) && $params !== 0) {
             return $this;
         }
+
         if (!is_array($params)) {
             return $this->bind(array($params => $value));
         }
+
         $clone = clone $this;
+
         foreach ($params as $key => $value) {
             $clone->params[$key] = $value;
         }
+
         return $clone;
     }
 
@@ -311,31 +315,33 @@ class Fragment implements \IteratorAggregate
                 } else {
                     throw new Exception('Unresolved parameter ' . $this->resolveOffset);
                 }
+
                 ++$this->resolveOffset;
                 break;
-
             case 2:
                 if (array_key_exists($this->resolveOffset, $this->params)) {
                     $this->resolveParams[] = $this->params[$this->resolveOffset];
                 } else {
                     $this->resolveParams[] = null;
                 }
+
                 ++$this->resolveOffset;
                 break;
-
             case 3:
                 $key = substr($key, 1);
+
                 if (array_key_exists($key, $this->params)) {
                     $replacement = $conn->value($this->params[$key]);
                 } else {
                     throw new Exception('Unresolved parameter ' . $key);
                 }
-                break;
 
+                break;
             case 4:
                 if (array_key_exists($key, $this->params)) {
                     $this->resolveParams[$key] = $this->params[$key];
                 }
+
                 break;
         }
 

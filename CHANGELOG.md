@@ -3,6 +3,9 @@
 ## 0.4.0
 
 - PSR-4
+- Fixed bug in `WHERE` condition building
+- Fixed bug where `lastInsertId` would fail in PostgreSQL
+- Fixed bug when inserting doubles
 
 ## 0.3.1
 

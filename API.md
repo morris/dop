@@ -23,6 +23,8 @@ class Connection
     /**
      * Returns a basic SELECT query for table $name.
      *
+     * SELECT [::select | *] FROM ::table WHERE [::where] [::orderBy] [::limit]
+     *
      * @param string $name
      * @return Fragment
      */
@@ -30,6 +32,8 @@ class Connection
 
     /**
      * Build an insert statement to insert a single row.
+     *
+     * INSERT INTO ::table (::columns) VALUES ::values
      *
      * @param string $table
      * @param array|\Traversable $row
@@ -42,6 +46,8 @@ class Connection
      *
      * Create a single statement with multiple value lists.
      * Supports SQL fragment parameters, but not supported by all drivers.
+     *
+     * INSERT INTO ::table (::columns) VALUES ::values
      *
      * @param string $table
      * @param array|\Traversable $rows
@@ -64,7 +70,7 @@ class Connection
     /**
      * Build an update statement.
      *
-     * UPDATE $table SET $data [WHERE $where]
+     * UPDATE ::table SET ::set [WHERE ::where] [::limit]
      *
      * @param string $table
      * @param array|\Traversable $data
@@ -77,7 +83,7 @@ class Connection
     /**
      * Build a delete statement.
      *
-     * DELETE FROM $table [WHERE $where]
+     * DELETE FROM ::table [WHERE ::where] [::limit]
      *
      * @param string $table
      * @param array|string $where
@@ -94,7 +100,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function where($condition = null, $params = array(), Fragment $before = null);
+    public function where($condition = null, $params = array(), $before = null);
 
     /**
      * Build a negated conditional expression fragment.
@@ -104,7 +110,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function whereNot($key, $value = array(), Fragment $before = null);
+    public function whereNot($key, $value = array(), $before = null);
 
     /**
      * Build an ORDER BY fragment.
@@ -114,7 +120,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function orderBy($column, $direction = 'ASC', Fragment $before = null);
+    public function orderBy($column, $direction = 'ASC', $before = null);
 
     /**
      * Build a LIMIT fragment.

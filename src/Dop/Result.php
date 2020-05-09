@@ -21,6 +21,7 @@ class Result implements \Iterator
     {
         $this->statement = $statement->resolve();
         $conn = $statement->conn();
+
         if ($statement->toString() !== $conn::EMPTY_STATEMENT) {
             $this->pdoStatement = $conn->pdo()->prepare($statement->toString());
         }
@@ -57,11 +58,13 @@ class Result implements \Iterator
         if (!$this->pdoStatement()) {
             return null;
         }
+
         $row = $this->pdoStatement()->fetch(
             \PDO::FETCH_ASSOC,
             isset($orientation) ? $orientation : \PDO::FETCH_ORI_NEXT,
             $offset
         );
+
         return $row ? $row : null;
     }
 
@@ -75,6 +78,7 @@ class Result implements \Iterator
         if (!$this->pdoStatement()) {
             return array();
         }
+
         return $this->pdoStatement()->fetchAll(\PDO::FETCH_ASSOC);
     }
 
@@ -88,6 +92,7 @@ class Result implements \Iterator
         if ($this->pdoStatement()) {
             $this->pdoStatement()->closeCursor();
         }
+
         return $this;
     }
 
@@ -101,6 +106,7 @@ class Result implements \Iterator
         if ($this->pdoStatement()) {
             return $this->pdoStatement()->rowCount();
         }
+
         return 0;
     }
 

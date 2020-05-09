@@ -70,6 +70,7 @@ class ConnectionTest extends BaseTest
             $conn->value(1),
             $conn->value(0.0),
             $conn->value(3.1),
+            $conn->value(0.00003569),
             $conn->value('1'),
             $conn->value('foo'),
             $conn->value(''),
@@ -84,8 +85,9 @@ class ConnectionTest extends BaseTest
             "'1'",
             "'0'",
             "'1'",
-            "'0.000000'",
-            "'3.100000'",
+            "'0'",
+            "'3.1'",
+            "'3.569E-5'",
             "'1'",
             "'foo'",
             "''",
@@ -213,11 +215,12 @@ class ConnectionTest extends BaseTest
 
         $conn->transaction(function ($conn) {
             $conn->insert('dummy', array('id' => 2, 'test' => 42))->exec();
+
             foreach (
                 array(
                     array('id' => 3,  'test' => 1),
                     array('id' => 4,  'test' => 2),
-                    array('id' => 5,  'test' => 3)
+                    array('id' => 5,  'test' => 0.00003569)
                 ) as $row
             ) {
                 $conn->insert('dummy', $row)->exec();
@@ -228,8 +231,15 @@ class ConnectionTest extends BaseTest
             "INSERT INTO `dummy` (`id`, `test`) VALUES ('2', '42')",
             "INSERT INTO `dummy` (`id`, `test`) VALUES ('3', '1')",
             "INSERT INTO `dummy` (`id`, `test`) VALUES ('4', '2')",
-            "INSERT INTO `dummy` (`id`, `test`) VALUES ('5', '3')"
+            "INSERT INTO `dummy` (`id`, `test`) VALUES ('5', '3.569E-5')"
         ), $this->statements);
+
+        $this->assertEquals(array(
+            array('id' => 2, 'test' => 42),
+            array('id' => 3,  'test' => 1),
+            array('id' => 4,  'test' => 2),
+            array('id' => 5,  'test' => 0.00003569)
+        ), $conn->query('dummy')->select('id')->select('test')->fetchAll());
     }
 
     public function testInsertPrepared()
@@ -363,7 +373,7 @@ class ConnectionTest extends BaseTest
     {
         $conn = $this->conn;
 
-        $raw = "SELET * FROM dummy WHERE test='::test' AND foo=::test and ?? = ?";
+        $raw = "SELECT * FROM dummy WHERE test='::test' AND foo=::test and ?? = ?";
         $frag = $conn->raw($raw);
 
         $this->assertEquals($frag, $frag->resolve());

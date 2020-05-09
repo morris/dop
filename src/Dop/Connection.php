@@ -28,6 +28,8 @@ class Connection
     /**
      * Returns a basic SELECT query for table $name.
      *
+     * SELECT [::select | *] FROM ::table WHERE [::where] [::orderBy] [::limit]
+     *
      * @param string $name
      * @return Fragment
      */
@@ -45,6 +47,8 @@ class Connection
     /**
      * Build an insert statement to insert a single row.
      *
+     * INSERT INTO ::table (::columns) VALUES ::values
+     *
      * @param string $table
      * @param array|\Traversable $row
      * @return Fragment
@@ -60,6 +64,8 @@ class Connection
      * Create a single statement with multiple value lists.
      * Supports SQL fragment parameters, but not supported by all drivers.
      *
+     * INSERT INTO ::table (::columns) VALUES ::values
+     *
      * @param string $table
      * @param array|\Traversable $rows
      * @return Fragment
@@ -69,12 +75,14 @@ class Connection
         if ($this->empt($rows)) {
             return $this(self::EMPTY_STATEMENT);
         }
+
         $columns = $this->columns($rows);
 
         $lists = array();
 
         foreach ($rows as $row) {
             $values = array();
+
             foreach ($columns as $column) {
                 if (array_key_exists($column, $row)) {
                     $values[] = $this->value($row[$column]);
@@ -82,6 +90,7 @@ class Connection
                     $values[] = 'DEFAULT';
                 }
             }
+
             $lists[] = $this->raw("(" . implode(", ", $values) . ")");
         }
 
@@ -113,7 +122,7 @@ class Connection
             'table' => $this->table($table),
             'columns' => $this->ident($columns),
             'values' => $this('(?' . str_repeat(', ?', count($columns) - 1) . ')')
-    ))->prepare();
+        ))->prepare();
 
         foreach ($rows as $row) {
             $values = array();
@@ -128,7 +137,7 @@ class Connection
     /**
      * Build an update statement.
      *
-     * UPDATE $table SET $data [WHERE $where]
+     * UPDATE ::table SET ::set [WHERE ::where] [::limit]
      *
      * @param string $table
      * @param array|\Traversable $data
@@ -153,7 +162,7 @@ class Connection
     /**
      * Build a delete statement.
      *
-     * DELETE FROM $table [WHERE $where]
+     * DELETE FROM ::table [WHERE ::where] [::limit]
      *
      * @param string $table
      * @param array|string $where
@@ -177,10 +186,9 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function where($condition = null, $params = array(), Fragment $before = null)
+    public function where($condition = null, $params = array(), $before = null)
     {
-
-    // empty condition evaluates to true
+        // empty condition evaluates to true
         if (empty($condition)) {
             return $before ? $before : $this('1=1');
         }
@@ -188,9 +196,11 @@ class Connection
         // conditions in key-value array
         if (is_array($condition)) {
             $cond = $before;
+
             foreach ($condition as $k => $v) {
                 $cond = $this->where($k, $v, $cond);
             }
+
             return $cond;
         }
 
@@ -202,7 +212,7 @@ class Connection
         }
 
         if ($before && (string) $before !== '1=1') {
-            return $this('(??) AND ??', array($before, $condition));
+            return $this('(??) AND (??)', array($before, $condition));
         }
 
         return $condition;
@@ -216,15 +226,16 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function whereNot($key, $value = array(), Fragment $before = null)
+    public function whereNot($key, $value = array(), $before = null)
     {
-
-    // key-value array
+        // key-value array
         if (is_array($key)) {
             $cond = $before;
+
             foreach ($key as $k => $v) {
                 $cond = $this->whereNot($k, $v, $cond);
             }
+
             return $cond;
         }
 
@@ -246,7 +257,7 @@ class Connection
      * @param Fragment|null $before
      * @return Fragment
      */
-    public function orderBy($column, $direction = 'ASC', Fragment $before = null)
+    public function orderBy($column, $direction = 'ASC', $before = null)
     {
         if (!preg_match('/^asc|desc$/i', $direction)) {
             throw new Exception('Invalid ORDER BY direction: ' . $direction);
@@ -314,9 +325,7 @@ class Connection
         $column = $this->ident($column);
 
         if (count($value) === 1) {
-
-      // use single column comparison if count is 1
-
+            // use single column comparison if count is 1
             $value = $value[0];
 
             if ($value === null) {
@@ -325,8 +334,7 @@ class Connection
                 return $this->raw($column . ' ' . $bang . '= ' . $this->value($value));
             }
         } elseif (count($value) > 1) {
-
-      // if we have multiple values, use IN clause
+            // if we have multiple values, use IN clause
 
             $values = array();
             $null = false;
@@ -401,6 +409,7 @@ class Connection
         if ($value instanceof Fragment) {
             return $value;
         }
+
         if ($value === null) {
             return $this('NULL');
         }
@@ -408,11 +417,13 @@ class Connection
         $value = $this->format($value);
 
         if (is_float($value)) {
-            $value = sprintf('%F', $value);
+            $value = strval($value);
         }
+
         if ($value === false) {
             $value = '0';
         }
+
         if ($value === true) {
             $value = '1';
         }
@@ -524,7 +535,20 @@ class Connection
      */
     public function lastInsertId($sequence = null)
     {
-        return $this->pdo()->lastInsertId($sequence);
+        try {
+            return $this->pdo->lastInsertId($sequence);
+        } catch (\PDOException $ex) {
+            $message = $ex->getMessage();
+
+            if (strpos($message, '55000') !== false) {
+                // we can safely ignore this PostgreSQL error:
+                // SQLSTATE[55000]: Object not in prerequisite state: 7
+                // ERROR:  lastval is not yet defined in this session
+                return null;
+            }
+
+            throw $ex;
+        }
     }
 
     //
@@ -574,6 +598,7 @@ class Connection
         foreach ($traversable as $_) {
             return false;
         }
+
         return true;
     }
 
@@ -588,6 +613,7 @@ class Connection
         if (!$rows) {
             return array();
         }
+
         $columns = array();
 
         foreach ($rows as $row) {
