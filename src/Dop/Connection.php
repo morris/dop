@@ -702,7 +702,8 @@ class Connection
      * @param Fragment $statement
      * @param function $callback
      */
-    public function execCallback($statement, $callback) {
+    public function execCallback($statement, $callback)
+    {
         $this->beforeExec($statement);
         $callback();
     }

@@ -122,7 +122,8 @@ class Result implements \Iterator
      *
      * @return Connection
      */
-    public function conn() {
+    public function conn()
+    {
         return $this->statement->conn();
     }
 
@@ -131,7 +132,8 @@ class Result implements \Iterator
      *
      * @return Fragment
      */
-    public function statement() {
+    public function statement()
+    {
         return $this->statement;
     }
 
