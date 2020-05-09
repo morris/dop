@@ -376,6 +376,7 @@ class Fragment implements \IteratorAggregate
     {
         $clone = clone $this;
         $clone->resolved = $clone;
+
         return $clone;
     }
 

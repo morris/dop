@@ -694,10 +694,21 @@ class Connection
     //
 
     /**
-     * Called before executing a statement.
+     * Execution callback.
      *
-     * The default implementation does nothing.
+     * Override to log or measure statement execution.
+     * Must call $callback.
      *
+     * @param Fragment $statement
+     * @param function $callback
+     */
+    public function execCallback($statement, $callback) {
+        $this->beforeExec($statement);
+        $callback();
+    }
+
+    /**
+     * @deprecated Override execCallback instead.
      * @param Fragment $statement
      */
     public function beforeExec($statement)

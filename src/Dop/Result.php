@@ -20,11 +20,6 @@ class Result implements \Iterator
     public function __construct($statement)
     {
         $this->statement = $statement->resolve();
-        $conn = $statement->conn();
-
-        if ($statement->toString() !== $conn::EMPTY_STATEMENT) {
-            $this->pdoStatement = $conn->pdo()->prepare($statement->toString());
-        }
     }
 
     /**
@@ -35,13 +30,17 @@ class Result implements \Iterator
      */
     public function exec($params = array())
     {
-        if (!$this->pdoStatement()) {
+        $pdoStatement = $this->pdoStatement();
+
+        if (!$pdoStatement) {
             return $this;
         }
 
         $statement = $this->statement->bind($params);
-        $statement->conn()->beforeExec($statement);
-        $this->pdoStatement()->execute($statement->params());
+
+        $this->conn()->execCallback($statement, function () use ($pdoStatement, $statement) {
+            $pdoStatement->execute($statement->params());
+        });
 
         return $this;
     }
@@ -55,11 +54,13 @@ class Result implements \Iterator
      */
     public function fetch($offset = 0, $orientation = null)
     {
-        if (!$this->pdoStatement()) {
+        $pdoStatement = $this->pdoStatement();
+
+        if (!$pdoStatement) {
             return null;
         }
 
-        $row = $this->pdoStatement()->fetch(
+        $row = $pdoStatement->fetch(
             \PDO::FETCH_ASSOC,
             isset($orientation) ? $orientation : \PDO::FETCH_ORI_NEXT,
             $offset
@@ -75,11 +76,13 @@ class Result implements \Iterator
      */
     public function fetchAll()
     {
-        if (!$this->pdoStatement()) {
+        $pdoStatement = $this->pdoStatement();
+
+        if (!$pdoStatement) {
             return array();
         }
 
-        return $this->pdoStatement()->fetchAll(\PDO::FETCH_ASSOC);
+        return $pdoStatement->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -89,8 +92,10 @@ class Result implements \Iterator
      */
     public function close()
     {
-        if ($this->pdoStatement()) {
-            $this->pdoStatement()->closeCursor();
+        $pdoStatement = $this->pdoStatement();
+
+        if ($pdoStatement) {
+            $pdoStatement->closeCursor();
         }
 
         return $this;
@@ -103,11 +108,31 @@ class Result implements \Iterator
      */
     public function affected()
     {
-        if ($this->pdoStatement()) {
-            return $this->pdoStatement()->rowCount();
+        $pdoStatement = $this->pdoStatement();
+
+        if ($pdoStatement) {
+            return $pdoStatement->rowCount();
         }
 
         return 0;
+    }
+
+    /**
+     * Get this result's connection.
+     *
+     * @return Connection
+     */
+    public function conn() {
+        return $this->statement->conn();
+    }
+
+    /**
+     * Get this result's statement.
+     *
+     * @return Fragment
+     */
+    public function statement() {
+        return $this->statement;
     }
 
     /**
@@ -115,6 +140,17 @@ class Result implements \Iterator
      */
     public function pdoStatement()
     {
+        if ($this->pdoStatement) {
+            return $this->pdoStatement;
+        }
+
+        $conn = $this->conn();
+        $statement = $this->statement->toString();
+
+        if ($statement !== $conn::EMPTY_STATEMENT) {
+            $this->pdoStatement = $conn->pdo()->prepare($statement);
+        }
+
         return $this->pdoStatement;
     }
 

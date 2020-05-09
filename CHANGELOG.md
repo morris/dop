@@ -6,6 +6,8 @@
 - Fixed bug in `WHERE` condition building
 - Fixed bug where `lastInsertId` would fail in PostgreSQL
 - Fixed bug when inserting doubles
+- Add `Connection::execCallback` for logging/measuring statements
+- Deprecate `Connection::beforeExec`
 
 ## 0.3.1
 

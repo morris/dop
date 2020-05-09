@@ -8,11 +8,10 @@ class TestConnection extends \Dop\Connection
         $this->test = $test;
     }
 
-    public function beforeExec($statement)
+    public function execCallback($statement, $callback)
     {
-        $return = parent::beforeExec($statement);
         $this->test->beforeExec($statement);
-        return $return;
+        $callback();
     }
 
     protected $test;
