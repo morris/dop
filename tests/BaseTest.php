@@ -114,7 +114,7 @@ class BaseTest extends \PHPUnit\Framework\TestCase
 
         $this->exec("CREATE TABLE dummy (
             id $p,
-            test INTEGER,
+            test DOUBLE PRECISION,
             name VARCHAR(30)
         )");
 
